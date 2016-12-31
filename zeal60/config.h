@@ -1,0 +1,11 @@
+#pragma once
+
+#define DEVICE_VID 0xFEED
+#define DEVICE_PID 0x6060
+#define DEVICE_USAGE_PAGE 0xFF60
+#define DEVICE_USAGE 0x0061
+
+#define RAW_HID_BUFFER_SIZE 32
+
+#define MATRIX_COLS 14
+#define MATRIX_ROWS 5

@@ -5,7 +5,7 @@ Release
 *.ilk
 *.lib
 *.suo
-*.vcxproj.*
+*.vcxproj.user
 *.VC.db
 *.VC.opendb
 *.ncb

@@ -2,4 +2,4 @@
 
 #include <stdint.h>
 
-bool stringToKeycode( const char *string, uint16_t *keycode );
+bool stringToValue( const char *string, uint16_t *value );

@@ -10,6 +10,7 @@
 
 #include "../../qmk_firmware/tmk_core/common/keycode.h"
 #include "../../qmk_firmware/quantum/quantum_keycodes.h"
+#include "../../qmk_firmware/tmk_core/common/action_code.h"
 #include "../../qmk_firmware/keyboards/zeal60/zeal_keycode.h"
 
 #include <string>
@@ -426,7 +427,7 @@ LookupEntry g_keycodeLookup[] =
 	LOOKUP_ENTRY( KC_DOUBLE_QUOTE ),
 	LOOKUP_ENTRY( KC_DQUO ),
 
-
+#if 0
 	// Basic layer changing
 	// These work because MO(x), TG(x), OSL(x) is being pre-processed here
 	MO( 0 ), "MO(0)",
@@ -441,6 +442,7 @@ LookupEntry g_keycodeLookup[] =
 	OSL( 1 ), "OSL(1)",
 	OSL( 2 ), "OSL(2)",
 	OSL( 3 ), "OSL(3)",
+#endif
 
 	// Zeal60 specific keycodes
 	LOOKUP_ENTRY( BR_INC ),
@@ -462,6 +464,19 @@ LookupEntry g_keycodeLookup[] =
 
 	// Some aliases for QMK special keycodes
 	LOOKUP_ENTRY( TG_NKRO ), // MAGIC_TOGGLE_NKRO
+
+	// These aren't really keycodes but they're needed
+	// for the MT(mod,kc) command
+    LOOKUP_ENTRY( MOD_LCTL ),
+    LOOKUP_ENTRY( MOD_LSFT ),
+    LOOKUP_ENTRY( MOD_LALT ),
+    LOOKUP_ENTRY( MOD_LGUI ),
+    LOOKUP_ENTRY( MOD_RCTL ),
+    LOOKUP_ENTRY( MOD_RSFT ),
+    LOOKUP_ENTRY( MOD_RALT ),
+    LOOKUP_ENTRY( MOD_RGUI ),
+	LOOKUP_ENTRY( MOD_HYPR ),
+	LOOKUP_ENTRY( MOD_MEH ),
 };
 
 bool stringToEnum( const char *string, uint16_t *value )
@@ -477,11 +492,9 @@ bool stringToEnum( const char *string, uint16_t *value )
 	return false;
 }
 
-bool stringToKeycode( const char *string, uint16_t *keycode )
+// Parse C-style hex literal e.g "0x12FE"
+bool stringToHex( const char *string, uint16_t *value )
 {
-	// TODO: handle macro usages like LCTL(kc), LSFT(kc)
-
-	// e.g. "0x12FE" becomes 12FE hex
 	std::string s = string;
 	if ( s.length() == 6 &&
 		s.substr( 0, 2 ) == "0x" )
@@ -490,14 +503,176 @@ bool stringToKeycode( const char *string, uint16_t *keycode )
 		int number = 0;
 		if ( sscanf( s2.c_str(), "%X", &number ) == 1 )
 		{
-			*keycode = number;
+			*value = number;
 			return true;
+		}
+
+	}
+	return false;
+}
+
+bool stringToNumber( const char *string, uint16_t *value )
+{
+	std::string s = string;
+	int number = 0;
+	if ( sscanf( s.c_str(), "%d", &number ) == 1 )
+	{
+		*value = number;
+		return true;
+	}
+	return false;
+}
+
+bool macroExpand1( const char *macro, const char *arg1, uint16_t *value )
+{
+	std::string m = macro;
+	uint16_t value1 = 0;
+	if ( ! stringToValue( arg1, &value1 ) )
+	{
+		return false;
+	}
+
+#define _EXPAND(x) if ( m == #x ) { *value = x( value1 ); return true; }
+
+	_EXPAND(LCTL);
+	_EXPAND(LSFT);
+	_EXPAND(LALT);
+	_EXPAND(LGUI);
+	_EXPAND(RCTL);
+	_EXPAND(RSFT);
+	_EXPAND(RALT);
+	_EXPAND(RGUI);
+	_EXPAND(HYPR);
+	_EXPAND(MEH);
+	_EXPAND(LCAG);
+	_EXPAND(ALTG);
+	_EXPAND(FUNC);
+	_EXPAND(S);
+	_EXPAND(F);
+	_EXPAND(TO);
+	_EXPAND(MO);
+	_EXPAND(DF);
+	_EXPAND(TG);
+	_EXPAND(OSL);
+	_EXPAND(OSM);
+	_EXPAND(CTL_T);
+	_EXPAND(SFT_T);
+	_EXPAND(ALT_T);
+	_EXPAND(GUI_T);
+	_EXPAND(C_S_T);
+	_EXPAND(MEH_T);
+	_EXPAND(LCAG_T);
+	_EXPAND(ALL_T);
+
+#undef _EXPAND
+
+	return false;
+}
+
+bool macroExpand2( const char *macro, const char *arg1, const char *arg2, uint16_t *value )
+{
+	std::string m = macro;
+	uint16_t value1 = 0;
+	uint16_t value2 = 0;
+	if ( ! stringToValue( arg1, &value1 ) ||
+		! stringToValue( arg2, &value2 ) )
+	{
+		return false;
+	}
+
+	if ( m == "LT" )
+	{
+		*value = LT( value1, value2 );
+		return true;
+	}
+	if ( m == "MT" )
+	{
+		*value = MT( value1, value2 );
+		return true;
+	}
+
+	return false;
+}
+
+bool stringToMacroExpansion( const char *string, uint16_t *value )
+{
+	std::string s = string;
+
+	// String is in form "X(Y)"
+	int firstOpen = s.find("(");
+	int lastClose = s.rfind(")");
+
+	if ( firstOpen > 0 && lastClose == s.length()-1 )
+	{
+		// find a comma not inside other macros
+		// need to keep track of open/close parenthesis
+		int comma = -1;
+		int level = 0;
+		for ( int i=firstOpen+1; i<lastClose; i++ )
+		{
+			if ( s.at(i) == '(')
+			{
+				level++;
+			}
+			else if ( s.at(i) == ')')
+			{
+				level--;
+			}
+			else if ( level == 0 && s.at(i) == ',')
+			{
+				if ( comma == -1 )
+				{
+					comma = i;
+				}
+				else
+				{
+					// Cannot parse more than two arguments
+					return false;
+				}
+			}
+		}
+
+		// Split the string into macro name, first and second arguments
+		std::string macro = s.substr( 0, firstOpen );
+		std::string arg1;
+		std::string arg2; 
+
+		if ( comma != -1 )
+		{
+			arg1 = s.substr( firstOpen+1, comma - (firstOpen+1) );
+			arg2 = s.substr( comma+1, lastClose - (comma+1));
+			return macroExpand2( macro.c_str(), arg1.c_str(), arg2.c_str(), value );
 		}
 		else
 		{
-			return false;
+			arg1 = s.substr( firstOpen+1, lastClose - (firstOpen+1));
+			return macroExpand1( macro.c_str(), arg1.c_str(), value );
 		}
 	}
 
-	return stringToEnum( string, keycode );
+	return false;
+}
+
+bool stringToValue( const char *string, uint16_t *value )
+{
+	std::string s = string;
+
+	if ( stringToMacroExpansion( string, value ))
+	{
+		return true;
+	}
+	if ( stringToEnum( string, value ) )
+	{
+		return true;
+	}
+	if ( stringToHex( string, value ))
+	{
+		return true;
+	}
+	if ( stringToNumber( string, value ))
+	{
+		return true;
+	}
+
+	return false;
 }

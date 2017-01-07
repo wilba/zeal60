@@ -311,8 +311,8 @@ int main(int argc, char **argv)
 	{
 		if (argc < 2 + 1 + MATRIX_ROWS * MATRIX_COLS)
 		{
-			std::cerr << "Invalid number of arguments for '" << command << "'" << std::endl;
-			return -1;
+			//std::cerr << "Invalid number of arguments for '" << command << "'" << std::endl;
+			//return -1;
 		}
 		int layer = atoi(argv[2]);
 		if ( layer < 0 || layer > 3)
@@ -327,10 +327,10 @@ int main(int argc, char **argv)
 		{
 			for (int col = 0; col < MATRIX_COLS; col++)
 			{
-				uint16_t keycode;
-				if ( stringToKeycode(argv[arg], &keycode ) )
+				uint16_t value;
+				if ( stringToValue(argv[arg], &value ) )
 				{
-					keymap[row][col] = keycode;
+					keymap[row][col] = value;
 				}
 				else
 				{

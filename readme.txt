@@ -100,9 +100,10 @@ https://github.com/jackhumbert/qmk_firmware/wiki#switching-and-toggling-layers
 
 and a general understanding of how the keymaps work.
 
-NOTE: not all QMK special keycodes will work. The simple layer switching ones do, such as:
-MO(0), MO(1), MO(2), MO(3), TG(0), TG(1), TG(2), TG(3), OSL(0), OSL(1), OSL(2), OSL(3)
-as well as aliases for LSFT(x), such as KC_TILD alias for LSFT(KC_GRV), but something like LSFT(KC_GRV) itself will not work (yet).
+Special QMK keycodes like MO(layer), LT(layer,kc), LCTRL(kc), etc. will work, however they must not include any spaces when they appear in the batch file.
+You CAN nest them, likesuchas LALT(LCTL(KC_DEL))
+
+Avoid using DF(layer) unless you REALLY know what you are doing.
 
 NOTE: Expert QMK users can use a hex string like "0x12FE" to specify any QMK keycode, or compile their own custom QMK firmware with actions/macros and use FN0-FN31 to trigger them.
 
@@ -110,16 +111,24 @@ Some Interesting QMK keycodes:
 
 KC_PWR - PC power down (or sleep)
 KC_SLEP - PC sleep
-RESET - start the bootloader so new firmware can be programmed with Flip (useful for power users that build their own firmware)
+RESET - start the bootloader so new firmware can be programmed with Flip
+-- useful for power users that build their own firmware, casual users can use Space + Esc while powering on
+
 KC_MUTE - mute
 KC_VOLU - volume up
 KC_VOLD - volume down
 KC_CALC - open calculator
 
+MO(1) - Momentary enable layer 1 while held
+LT(1,KC_CAPS) - Enable layer 1 while held, Caps Lock when tapped
+
+
 Zeal60 Special Keycodes:
 
 FN_MO13 - hold for layer 1, hold with FN_MO23 for layer 3
 FN_MO23 - hold for layer 2, hold with FN_MO13 for layer 3
+-- Use both these keycodes in a layout to get Fn1 + Fn2 = Fn3 functionality
+
 FN_TT13 - hold for layer 1, triple-tap to toggle on/off layer 3
 FN_TT23 - hold for layer 2, triple-tap to toggle on/off layer 3
 TG_NKRO - toggle NKRO on/off and store the setting

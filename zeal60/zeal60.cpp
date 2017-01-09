@@ -148,9 +148,9 @@ bool keymap_default_save( hid_device *device )
 	return send_message( device, id_keymap_default_save );
 }
 
-bool backlight_config_set_flags( hid_device *device, msg_backlight_config_set_flags *msg )
+bool backlight_config_set_values( hid_device *device, msg_backlight_config_set_values *msg )
 {
-	return send_message( device, id_backlight_config_set_flags, msg, sizeof(msg_backlight_config_set_flags) );
+	return send_message( device, id_backlight_config_set_values, msg, sizeof(msg_backlight_config_set_values) );
 }
 
 bool backlight_config_set_alphas_mods( hid_device *device, msg_backlight_config_set_alphas_mods *msg )
@@ -167,14 +167,14 @@ int main(int argc, char **argv)
 {
 	if (hid_init())
 	{
-		std::cerr << "hidapi initialization failed" << std::endl;
+		std::cerr << "*** Error: hidapi initialization failed" << std::endl;
 		return -1;
 	}
 
 	hid_device *device = hid_open( DEVICE_VID, DEVICE_PID, DEVICE_USAGE_PAGE, DEVICE_USAGE );
 	if ( ! device )
 	{
-		std::cerr << "Device not found" << std::endl;
+		std::cerr << "*** Error: Device not found" << std::endl;
 		return -1;
 	}
 
@@ -182,14 +182,14 @@ int main(int argc, char **argv)
 	msg_protocol_version msg;
 	if ( res == protocol_version( device, &msg ) )
 	{
-		std::cerr << "Error getting protocol version" << std::endl;
+		std::cerr << "*** Error: Error getting protocol version" << std::endl;
 		hid_close( device );
 		return -1;
 	}
 
 	if ( msg.version != PROTOCOL_VERSION )
 	{
-		std::cerr << "Device uses protocol version " << msg.version << std::endl;
+		std::cerr << "*** Error: Device uses protocol version " << msg.version << std::endl;
 		std::cerr << "This program uses protocol version " << PROTOCOL_VERSION << std::endl;
 		hid_close( device );
 		return -1;
@@ -204,67 +204,93 @@ int main(int argc, char **argv)
 	// First arg is the command
 	std::string command = argv[1];
 
-	if ( command == "backlight_config_set_flags" )
+	if ( command == "backlight_config_set_values" )
 	{
-		bool use_split_backspace = false;
-		bool use_split_left_shift = false;
-		bool use_split_right_shift = false;
-		bool use_7u_spacebar = false;
-		bool use_iso_enter = false;
+		msg_backlight_config_set_values msg;
+		memset( (void*)&msg, 0x00, sizeof(msg_backlight_config_set_values) );
+
+		msg.use_split_backspace = 0;
+		msg.use_split_left_shift = 0;
+		msg.use_split_right_shift = 0;
+		msg.use_7u_spacebar = 0;
+		msg.use_iso_enter = 0;
+		msg.disable_when_usb_suspended = 0;
+		msg.disable_after_timeout = 0;
 
 		for ( int i = 2; i < argc; i++ )
 		{
 			std::string s = argv[i];
-			if ( s == "use_split_backspace" )
+
+			// Handle "name=value" cases first
+			size_t equalPos = s.find( "=" );
+			if ( equalPos == std::string::npos )
 			{
-				use_split_backspace = true;
+				std::cerr << "*** Error: Invalid value '" << s << "', not in form 'name=value'" << std::endl;
+				return -1;
 			}
-			else if ( s == "use_split_left_shift" )
+
+			std::string name = s.substr( 0, equalPos );
+			std::string value = s.substr( equalPos + 1 );
+			int intValue = 0;
+
+			if ( name == "use_split_backspace" &&
+				sscanf( value.c_str(), "%d", &intValue ) == 1 )
 			{
-				use_split_left_shift = true;
+				msg.use_split_backspace = intValue != 0;
 			}
-			else if ( s == "use_split_right_shift" )
+			else if ( name == "use_split_left_shift" &&
+				sscanf( value.c_str(), "%d", &intValue ) == 1 )
 			{
-				use_split_right_shift = true;
+				msg.use_split_left_shift = intValue != 0;
 			}
-			else if ( s == "use_7u_spacebar" )
+			else if ( name == "use_split_right_shift" &&
+				sscanf( value.c_str(), "%d", &intValue ) == 1 )
 			{
-				use_7u_spacebar = true;
+				msg.use_split_right_shift = intValue != 0;
 			}
-			else if ( s == "use_iso_enter" )
+			else if ( name == "use_7u_spacebar" &&
+				sscanf( value.c_str(), "%d", &intValue ) == 1 )
 			{
-				use_iso_enter = true;
+				msg.use_7u_spacebar = intValue != 0;
+			}
+			else if ( name == "use_iso_enter" &&
+				sscanf( value.c_str(), "%d", &intValue ) == 1 )
+			{
+				msg.use_iso_enter = intValue != 0;
+			}
+			else if ( name == "disable_when_usb_suspended" &&
+				sscanf( value.c_str(), "%d", &intValue ) == 1 )
+			{
+				msg.disable_when_usb_suspended = intValue != 0;
+			}
+			else if ( name == "disable_after_timeout" &&
+				sscanf( value.c_str(), "%d", &intValue ) == 1 )
+			{
+				msg.disable_after_timeout = intValue;
 			}
 			else
 			{
-				std::cerr << "Invalid flag '" << s << "'" << std::endl;
+				std::cerr << "*** Error: Invalid name/value '" << s << "'" << std::endl;
 				return -1;
 			}
 		}
 
-		msg_backlight_config_set_flags msg;
-		msg.flags = (use_split_backspace ? (1 << 0) : 0) |
-						(use_split_left_shift ? (1 << 1) : 0) |
-						(use_split_right_shift ? (1 << 2) : 0) |
-						(use_7u_spacebar ? (1 << 3) : 0) |
-						(use_iso_enter ? (1 << 4) : 0);
-
-		if ( !backlight_config_set_flags( device, &msg ) )
+		if ( !backlight_config_set_values( device, &msg ) )
 		{
-			std::cerr << "Error setting backlight config flags" << std::endl;
+			std::cerr << "*** Error: Error setting backlight config values" << std::endl;
 			hid_close( device );
 			return -1;
 		}
 
 		hid_close( device );
-		std::cout << "Backlight config flags set" << std::endl;
+		std::cout << "Backlight config values set" << std::endl;
 		return 0;
 	}
 	else if ( command == "backlight_config_set_alphas_mods" )
 	{
 		if ( argc < 2 + MATRIX_ROWS * MATRIX_COLS )
 		{
-			std::cerr << "Invalid number of arguments for '" << command << "'" << std::endl;
+			std::cerr << "*** Error: Invalid number of arguments for '" << command << "'" << std::endl;
 			return -1;
 		}
 		msg_backlight_config_set_alphas_mods msg;
@@ -295,7 +321,7 @@ int main(int argc, char **argv)
 
 		if (!backlight_config_set_alphas_mods( device, &msg ) )
 		{
-			std::cerr << "Error setting backlight config alpha/mods" << std::endl;
+			std::cerr << "*** Error: Error setting backlight config alpha/mods" << std::endl;
 			hid_close( device );
 			return -1;
 		}
@@ -311,13 +337,13 @@ int main(int argc, char **argv)
 	{
 		if (argc < 2 + 1 + MATRIX_ROWS * MATRIX_COLS)
 		{
-			//std::cerr << "Invalid number of arguments for '" << command << "'" << std::endl;
-			//return -1;
+			std::cerr << "*** Error: Invalid number of arguments for '" << command << "'" << std::endl;
+			return -1;
 		}
 		int layer = atoi(argv[2]);
 		if ( layer < 0 || layer > 3)
 		{
-			std::cerr << "Invalid layer '" << argv[2] << "'" << std::endl;
+			std::cerr << "*** Error: Invalid layer '" << argv[2] << "'" << std::endl;
 			return -1;
 		}
 
@@ -334,7 +360,7 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					std::cerr << "Invalid keycode '" << argv[arg] << "'" << std::endl;
+					std::cerr << "*** Error: Invalid keycode '" << argv[arg] << "'" << std::endl;
 					return -1;
 				}
 
@@ -345,16 +371,16 @@ int main(int argc, char **argv)
 
 		for (int row = 0; row < MATRIX_ROWS; row++)
 		{
-			for (int col = 0; col < MATRIX_COLS; col++)
+			for (int column = 0; column < MATRIX_COLS; column++)
 			{
 				msg_keymap_keycode_save msg;
 				msg.layer = layer;
 				msg.row = row;
-				msg.col = col;
-				msg.keycode = keymap[row][col];
+				msg.column = column;
+				msg.keycode = keymap[row][column];
 				if ( !keymap_keycode_save( device, &msg ) )
 				{
-					std::cerr << "Error saving keymap layer " << layer << " row " << row << " col " << col << std::endl;
+					std::cerr << "*** Error: Error saving keymap layer " << layer << " row " << row << " column " << column << std::endl;
 					hid_close( device );
 					return -1;
 				}
@@ -400,7 +426,7 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					std::cerr << "Invalid color assignment '" << argString << "'" << std::endl;
+					std::cerr << "*** Error: Invalid color assignment '" << argString << "'" << std::endl;
 					return -1;
 				}
 			}
@@ -414,7 +440,7 @@ int main(int argc, char **argv)
 					if ( row >= MATRIX_ROWS )
 					{
 						// Too many entries!
-						std::cerr << "Invalid number of color entries" << std::endl;
+						std::cerr << "*** Error: Invalid number of color entries" << std::endl;
 						return -1;
 					}
 					colors[row][col] = it->second;
@@ -422,7 +448,7 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					std::cerr << "Invalid color entry '" << argString << "'" << std::endl;
+					std::cerr << "*** Error: Invalid color entry '" << argString << "'" << std::endl;
 					return -1;
 				}
 			}
@@ -430,21 +456,21 @@ int main(int argc, char **argv)
 
 		if ( colorsIndex != MATRIX_ROWS * MATRIX_COLS )
 		{
-			std::cerr << "Invalid number of color entries" << std::endl;
+			std::cerr << "*** Error: Invalid number of color entries" << std::endl;
 			return -1;
 		}
 
 		for ( int row = 0; row < MATRIX_ROWS; row++ )
 		{
-			for ( int col = 0; col < MATRIX_COLS; col++ )
+			for ( int column = 0; column < MATRIX_COLS; column++ )
 			{
 				msg_backlight_set_key_color msg;
 				msg.row = row;
-				msg.col = col;
-				msg.hsv = colors[row][col];
+				msg.column = column;
+				msg.hsv = colors[row][column];
 				if ( !backlight_set_key_color( device, &msg ) )
 				{
-					std::cerr << "Error saving color row " << row << " col " << col << std::endl;
+					std::cerr << "*** Error: Error saving color row " << row << " column " << column << std::endl;
 					hid_close( device );
 					return -1;
 				}
@@ -456,7 +482,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	std::cerr << "Invalid command '" << command << "'" << std::endl;
+	std::cerr << "*** Error: Invalid command '" << command << "'" << std::endl;
 	return -1;
 }
 

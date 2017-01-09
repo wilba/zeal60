@@ -50,21 +50,38 @@ zeal60 Commands:
 
 The following explains what commands are being used in the batch files to achieve backlight configuration and keymap configuration.
 
-zeal60 backlight_config_set_flags [ use_split_backspace | use_split_left_shift | use_split_right_shift | use_7u_spacebar | use_iso_enter ]
+zeal60 backlight_config_set_values [ name=value ] ... 
 
-This command configures which switches are being used, so that LEDs not under a switch will be disabled.
+Name/value pairs:
+
+use_split_backspace=<0|1>
+use_split_left_shift=<0|1> 
+use_split_right_shift=<0|1> 
+use_7u_spacebar=<0|1> 
+use_iso_enter=<0|1> 
+
+Configures which switches are being used, so that LEDs not under a switch will be disabled.
 It needs to be combined with soldering the jumpers on the PCB to match the switches being used, to connect one of two LEDs to the LED matrix.
+0 is false, 1 is true. e.g. use_split_backspace=1 enables split backspace LEDs.
+
+disable_when_usb_suspended=<0|1>
+
+Turn off backlight when the USB is suspended, i.e. when the PC is in Sleep/Hibernate/Shutdown mode.
+
+disable_after_timeout=<N>
+
+Turn off backlight after no keypresses for N minutes.
 
 
 zeal60 backlight_config_set_alphas_mods [ ALPHA | MOD ] ...
 
 This command configures which switches in the switch matrix are alphanumeric keys and which are modifiers.
-This is used in backlight modes which set the alphanumeric and modifier keys to different colors.
+This is used in backlight effects which set the LEDs under alphanumeric and modifier keys to different colors.
 
 
-zeal60 keymap <keymap_number> <keycode> ...
+zeal60 keymap <layer> <keycode> ...
 
-This command sets the keycodes in a keymap. keymap_number is 0 to 3. keycode is a QMK keycode name, e.g. KC_ESC, KC_1, KC_2 etc.
+This command sets the keycodes in a keymap. layer is 0 to 3. keycode is a QMK keycode name, e.g. KC_ESC, KC_1, KC_2 etc.
 
 This is how the default keymaps are configured:
 Keymap 0 is the default keymap, what you expect keys to do when not holding down a Fn key.

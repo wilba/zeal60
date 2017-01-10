@@ -13,6 +13,7 @@
 #include "../../qmk_firmware/tmk_core/common/action_code.h"
 #include "../../qmk_firmware/keyboards/zeal60/zeal_keycode.h"
 
+#include <cstring>
 #include <string>
 
 struct LookupEntry

@@ -546,9 +546,13 @@ bool macroExpand1( const char *macro, const char *arg1, uint16_t *value )
 	_EXPAND(MEH);
 	_EXPAND(LCAG);
 	_EXPAND(ALTG);
+	//_EXPAND(SCMD);
+	//_EXPAND(SWIN);
+
 	_EXPAND(FUNC);
 	_EXPAND(S);
 	_EXPAND(F);
+	_EXPAND(M);
 	_EXPAND(TO);
 	_EXPAND(MO);
 	_EXPAND(DF);
@@ -563,6 +567,11 @@ bool macroExpand1( const char *macro, const char *arg1, uint16_t *value )
 	_EXPAND(MEH_T);
 	_EXPAND(LCAG_T);
 	_EXPAND(ALL_T);
+	//_EXPAND(SCMD_T);
+	//_EXPAND(SWIN_T);
+
+	// Needs unicode defined in QMK 
+	//_EXPAND(UC);
 
 #undef _EXPAND
 

@@ -27,6 +27,65 @@
 #include "../../qmk_firmware/keyboards/zeal60/zeal_rpc.h"
 #include "../../qmk_firmware/keyboards/zeal60/zeal_color.h"
 
+bool parse_hsv_color_string( const char *string, HSV *color )
+{
+	std::string s = string;
+
+	if ( s.find( "hsv(" ) == 0 &&
+		s.find( ")" ) == s.length() - 1 )
+	{
+		std::string values = s.substr( 4, s.length() - 1 );
+		int h, s, v;
+		if ( sscanf( values.c_str(), "%d,%d,%d", &h, &s, &v ) == 3 )
+		{
+			color->h = uint8_t( double( h ) / 360.0 * 255.0 );
+			color->s = uint8_t( double( s ) / 100.0 * 255.0 );
+			color->v = uint8_t( double( v ) / 100.0 * 255.0 );
+			return true;
+		}
+	}
+	return false;
+}
+
+bool parse_hsv_color_string2( const char *string, HSV *color )
+{
+	std::string values = string;
+
+	int h, s, v;
+	if ( sscanf( values.c_str(), "%d,%d,%d", &h, &s, &v ) == 3 )
+	{
+		color->h = uint8_t( double( h ) / 360.0 * 255.0 );
+		color->s = uint8_t( double( s ) / 100.0 * 255.0 );
+		color->v = uint8_t( double( v ) / 100.0 * 255.0 );
+		return true;
+	}
+	return false;
+}
+
+bool parse_indicator_row_column( const char *string, int *row, int *column )
+{
+	std::string s = string;
+	int r, c;
+	if ( s == "none" )
+	{
+		*row = 255;
+		*column = 255;
+		return true;
+	}
+	else if ( s == "all" )
+	{
+		*row = 254;
+		*column = 254;
+		return true;
+	}
+	else if ( sscanf( s.c_str(), "%d,%d", &r, &c ) == 2 )
+	{
+		*row = r;
+		*column = c;
+	}
+	return false;
+}
+
 hid_device *
 hid_open( unsigned short vendor_id, unsigned short product_id, unsigned short usage_page, unsigned short usage )
 {
@@ -66,6 +125,13 @@ hid_open( unsigned short vendor_id, unsigned short product_id, unsigned short us
 
 bool send_message( hid_device *device, uint8_t id, void *outMsg = NULL, uint8_t outMsgLength = 0, void *retMsg = NULL, uint8_t retMsgLength = 0 )
 {
+	//assert( outMsgLength <= RAW_HID_BUFFER_SIZE );
+	if ( outMsgLength > RAW_HID_BUFFER_SIZE )
+	{
+		printf("Message size %d is bigger than maximum %d\n", outMsgLength, RAW_HID_BUFFER_SIZE);
+		return false;
+	}
+
 	int res;
 	uint8_t data[RAW_HID_BUFFER_SIZE + 1];
 	memset( data, 0xFE, sizeof( data ) );
@@ -217,6 +283,30 @@ int main(int argc, char **argv)
 		msg.disable_when_usb_suspended = 0;
 		msg.disable_after_timeout = 0;
 
+		msg.caps_lock_indicator_color.h = 0;
+		msg.caps_lock_indicator_color.s = 0;
+		msg.caps_lock_indicator_color.v = 0;
+		msg.caps_lock_indicator_row = 255;
+		msg.caps_lock_indicator_column = 255;   
+
+		msg.layer_1_indicator_color.h = 0;
+		msg.layer_1_indicator_color.s = 0;
+		msg.layer_1_indicator_color.v = 0;
+		msg.layer_1_indicator_row = 255;
+		msg.layer_1_indicator_column = 255;   
+
+		msg.layer_2_indicator_color.h = 0;
+		msg.layer_2_indicator_color.s = 0;
+		msg.layer_2_indicator_color.v = 0;
+		msg.layer_2_indicator_row = 255;
+		msg.layer_2_indicator_column = 255;   
+
+		msg.layer_3_indicator_color.h = 0;
+		msg.layer_3_indicator_color.s = 0;
+		msg.layer_3_indicator_color.v = 0;
+		msg.layer_3_indicator_row = 255;
+		msg.caps_lock_indicator_column = 255;   
+
 		for ( int i = 2; i < argc; i++ )
 		{
 			std::string s = argv[i];
@@ -232,6 +322,8 @@ int main(int argc, char **argv)
 			std::string name = s.substr( 0, equalPos );
 			std::string value = s.substr( equalPos + 1 );
 			int intValue = 0;
+			HSV hsvValue;
+			int row,column = 0;
 
 			if ( name == "use_split_backspace" &&
 				sscanf( value.c_str(), "%d", &intValue ) == 1 )
@@ -267,6 +359,70 @@ int main(int argc, char **argv)
 				sscanf( value.c_str(), "%d", &intValue ) == 1 )
 			{
 				msg.disable_after_timeout = intValue;
+			}
+			else if ( name == "brightness" &&
+				sscanf( value.c_str(), "%d", &intValue ) == 1 )
+			{
+				msg.brightness = uint8_t( double( intValue ) / 100.0 * 255.0 );
+			}
+			else if ( name == "effect" &&
+				sscanf( value.c_str(), "%d", &intValue ) == 1 )
+			{
+				msg.effect = intValue;
+			}
+			else if ( name == "color_1" &&
+				parse_hsv_color_string2( value.c_str(), &hsvValue ) )
+			{
+				msg.color_1 = hsvValue;
+			}
+			else if ( name == "color_2" &&
+				parse_hsv_color_string2( value.c_str(), &hsvValue ) )
+			{
+				msg.color_2 = hsvValue;
+			}
+			else if ( name == "caps_lock_indicator_color" &&
+				parse_hsv_color_string2( value.c_str(), &hsvValue ) )
+			{
+				msg.caps_lock_indicator_color = hsvValue;
+			}
+			else if ( name == "layer_1_indicator_color" &&
+				parse_hsv_color_string2( value.c_str(), &hsvValue ) )
+			{
+				msg.layer_1_indicator_color = hsvValue;
+			}
+			else if ( name == "layer_2_indicator_color" &&
+				parse_hsv_color_string2( value.c_str(), &hsvValue ) )
+			{
+				msg.layer_2_indicator_color = hsvValue;
+			}
+			else if ( name == "layer_3_indicator_color" &&
+				parse_hsv_color_string2( value.c_str(), &hsvValue ) )
+			{
+				msg.layer_3_indicator_color = hsvValue;
+			}
+			else if ( name == "caps_lock_indicator_row_col" &&
+				parse_indicator_row_column( value.c_str(), &row, &column ) )
+			{
+				msg.caps_lock_indicator_row = row;
+				msg.caps_lock_indicator_column = column;
+			}
+			else if ( name == "layer_1_indicator_row_col" &&
+				parse_indicator_row_column( value.c_str(), &row, &column ) )
+			{
+				msg.layer_1_indicator_row = row;
+				msg.layer_1_indicator_column = column;
+			}
+			else if ( name == "layer_2_indicator_row_col" &&
+				parse_indicator_row_column( value.c_str(), &row, &column ) )
+			{
+				msg.layer_2_indicator_row = row;
+				msg.layer_2_indicator_column = column;
+			}
+			else if ( name == "layer_3_indicator_row_col" &&
+				parse_indicator_row_column( value.c_str(), &row, &column ) )
+			{
+				msg.layer_3_indicator_row = row;
+				msg.layer_3_indicator_column = column;
 			}
 			else
 			{
@@ -408,21 +564,11 @@ int main(int argc, char **argv)
 			{
 				std::string name = argString.substr( 0, equalPos );
 				std::string colorString = argString.substr( equalPos + 1 );
-				if ( colorString.find( "hsv(" ) == 0 &&
-					colorString.find( ")" ) == colorString.length() - 1 )
+				HSV color;
+				if ( parse_hsv_color_string( colorString.c_str(), &color ) )
 				{
-					std::string values = colorString.substr( 4, colorString.length() - 1 );
-					int h, s, v;
-					if ( sscanf( values.c_str(), "%d,%d,%d", &h, &s, &v ) == 3 )
-					{
-						// we're good.
-						HSV color;
-						color.h = uint8_t( double( h ) / 360.0 * 255.0 );
-						color.s = uint8_t( double( s ) / 100.0 * 255.0 );
-						color.v = uint8_t( double( v ) / 100.0 * 255.0 );
-						mapNameToColor.insert( std::pair<std::string, HSV>( name, color ) );
-						continue;
-					}
+					mapNameToColor.insert( std::pair<std::string, HSV>( name, color ) );
+					continue;
 				}
 				else
 				{

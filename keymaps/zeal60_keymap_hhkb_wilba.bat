@@ -7,7 +7,19 @@ use_split_right_shift=1 ^
 use_7u_spacebar=1 ^
 use_iso_enter=0 ^
 disable_when_usb_suspended=1 ^
-disable_after_timeout=10
+disable_after_timeout=200 ^
+brightness=100 ^
+effect=3 ^
+color_1=265,50,100 ^
+color_2=180,50,100 ^
+caps_lock_indicator_color=300,100,100 ^
+caps_lock_indicator_row_col=all ^
+layer_1_indicator_color=180,100,100 ^
+layer_1_indicator_row_col=all ^
+layer_2_indicator_color=180,100,100 ^
+layer_2_indicator_row_col=all ^
+layer_3_indicator_color=0,100,100 ^
+layer_3_indicator_row_col=none
 
 zeal60 backlight_config_set_alphas_mods ^
 MOD      ALPHA    ALPHA    ALPHA    ALPHA    ALPHA    ALPHA    ALPHA    ALPHA    ALPHA    ALPHA    ALPHA    ALPHA    MOD     ^

@@ -9,14 +9,16 @@ Depending on the layout, Fn1 and Fn2 are assigned to right Win and Menu keys, or
 The default backlight controls are on layer 3, which is (by default) enabled by holding down Fn1 and Fn2
 
 1 / 2 - change effect
- - All Off
- - Solid Color 1
- - Alphas/Mods Color 1/2
- - Gradient Vertical Color 1/2 
- - Cycle All
- - Cycle Horizontal
- - Cycle Vertical
- - Custom Key Colors
+ 0= All Off
+ 1= Solid Color 1
+ 2= Alphas/Mods Color 1/2
+ 3= Gradient Vertical Color 1/2 
+ 4= Raindrops Color 1/2
+ 5= Cycle All
+ 6= Cycle Horizontal
+ 7= Cycle Vertical
+ 8= Jellybean Raindrops
+ 9= Custom Key Colors
 
 3 / 4 - color 1 hue -/+
 E / R - color 1 sat -/+
@@ -68,9 +70,50 @@ disable_when_usb_suspended=<0|1>
 
 Turn off backlight when the USB is suspended, i.e. when the PC is in Sleep/Hibernate/Shutdown mode.
 
-disable_after_timeout=<N>
+disable_after_timeout=N
 
 Turn off backlight after no keypresses for N minutes.
+
+brightness=N
+
+Global brightness setting, N in range 0-100
+
+effect=N
+
+Backlight effect, N in range 0-9 (see above for list)
+
+color_1=H,S,V
+color_2=H,S,V
+
+Set the colors used in backlight effects
+
+caps_lock_indicator_color=H,S,V
+layer_1_indicator_color=H,S,V
+layer_2_indicator_color=H,S,V
+layer_3_indicator_color=H,S,V
+
+Set the color used for Caps Lock and active layer indicators
+
+caps_lock_indicator_row_col=<ROW,COL|all|none>
+layer_1_indicator_row_col=<ROW,COL|all|none>
+layer_2_indicator_row_col=<ROW,COL|all|none>
+layer_3_indicator_row_col=<ROW,COL|all|none>
+
+Set the LEDs used for Caps Lock and active layer indicators.
+ROW/COL specify which switch in the switch matrix
+
+e.g.
+ANSI Caps Lock Key:  caps_lock_indicator_row_col=0,2
+Spacebar+stabs:      caps_lock_indicator_row_col=4,7
+Esc Key:             caps_lock_indicator_row_col=0,0
+Left Win Key:        caps_lock_indicator_row_col=4,1
+Right Win Key:       caps_lock_indicator_row_col=4,11
+Right Menu Key:      caps_lock_indicator_row_col=4,12
+HHKB Fn Key:         caps_lock_indicator_row_col=3,13
+All keys:            caps_lock_indicator_row_col=all 
+None:                caps_lock_indicator_row_col=none
+
+Note: Use layer_3_indicator_row_col=none if you use the default layer 3 keymaps which change the backlight.
 
 
 zeal60 backlight_config_set_alphas_mods [ ALPHA | MOD ] ...

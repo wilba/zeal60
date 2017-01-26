@@ -461,6 +461,8 @@ LookupEntry g_keycodeLookup[] =
 	LOOKUP_ENTRY( S2_DEC ),
 	LOOKUP_ENTRY( FN_MO13 ),
 	LOOKUP_ENTRY( FN_MO23 ),
+	LOOKUP_ENTRY( FN_TT13 ),
+	LOOKUP_ENTRY( FN_TT23 ),
 
 	// Some aliases for QMK special keycodes
 	LOOKUP_ENTRY( TG_NKRO ), // MAGIC_TOGGLE_NKRO

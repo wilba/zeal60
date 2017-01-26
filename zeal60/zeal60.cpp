@@ -82,6 +82,7 @@ bool parse_indicator_row_column( const char *string, int *row, int *column )
 	{
 		*row = r;
 		*column = c;
+		return true;
 	}
 	return false;
 }

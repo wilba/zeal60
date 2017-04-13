@@ -6,6 +6,9 @@
 #include <map>
 #include <iostream>
 
+#include <vector>
+#include <string>
+
 #include "hidapi.h"
 
 // Headers needed for sleeping.
@@ -124,6 +127,30 @@ hid_open( unsigned short vendor_id, unsigned short product_id, unsigned short us
 	return device;
 }
 
+std::vector<std::string>
+hid_get_device_paths( unsigned short vendor_id, unsigned short product_id, unsigned short usage_page, unsigned short usage )
+{
+	std::vector<std::string> devicePaths;
+	struct hid_device_info *deviceInfos;
+	struct hid_device_info *currentDeviceInfo;
+	struct hid_device_info *foundDeviceInfo = NULL;
+	deviceInfos = hid_enumerate( vendor_id, product_id );
+	currentDeviceInfo = deviceInfos;
+	while ( currentDeviceInfo )
+	{
+		if ( currentDeviceInfo->usage_page == usage_page &&
+			 currentDeviceInfo->usage == usage )
+		{
+			devicePaths.push_back( currentDeviceInfo->path );
+		}
+		currentDeviceInfo = currentDeviceInfo->next;
+	}
+
+	hid_free_enumeration(deviceInfos);
+
+	return devicePaths;	
+}
+
 bool send_message( hid_device *device, uint8_t id, void *outMsg = NULL, uint8_t outMsgLength = 0, void *retMsg = NULL, uint8_t retMsgLength = 0 )
 {
 	//assert( outMsgLength <= RAW_HID_BUFFER_SIZE );
@@ -230,6 +257,80 @@ bool backlight_set_key_color( hid_device *device, msg_backlight_set_key_color *m
 	return send_message( device, id_backlight_set_key_color, msg, sizeof(msg_backlight_set_key_color) );
 }
 
+bool system_get_state( hid_device *device, msg_system_state *msg )
+{
+	return send_message( device, id_system_get_state, msg, sizeof(msg_system_state), msg, sizeof(msg_system_state) );
+}
+
+
+hid_device *
+hid_open_least_uptime( unsigned short vendor_id, unsigned short product_id, unsigned short usage_page, unsigned short usage )
+{
+	std::vector<std::string> devicePaths = hid_get_device_paths(vendor_id, product_id, usage_page, usage );
+
+	// early abort
+	if ( devicePaths.size() == 0 )
+	{
+		return NULL;
+	}
+
+	// no need to check ticks
+	if ( devicePaths.size() == 1 )
+	{
+		return hid_open_path( devicePaths[0].c_str() ); 
+	}
+
+	std::string bestDevicePath;
+	uint32_t bestDeviceTick = 0;
+
+	for ( int i=0; i<(int)devicePaths.size(); i++ )
+	{
+		hid_device *device = hid_open_path( devicePaths[i].c_str() );
+		
+		msg_protocol_version msgProtocolVersion;
+		if ( !protocol_version( device, &msgProtocolVersion ) )
+		{
+			std::cerr << "*** Error: Error getting protocol version" << std::endl;
+			hid_close( device );
+			continue;
+			//return 0;
+		}
+
+		if ( msgProtocolVersion.version != PROTOCOL_VERSION )
+		{
+			std::cerr << "*** Error: Device uses protocol version " << msgProtocolVersion.version << std::endl;
+			std::cerr << "This program uses protocol version " << PROTOCOL_VERSION << std::endl;
+			hid_close( device );
+			continue;
+			//return 0;
+		}
+
+		msg_system_state msgSystemState;
+		msgSystemState.id = 0; // tick
+		if ( !system_get_state( device, &msgSystemState ) )
+		{
+			std::cerr << "*** Error: Error getting system state" << std::endl;
+			hid_close( device );
+			continue;
+		}
+
+		if ( bestDevicePath.empty() || msgSystemState.value < bestDeviceTick )
+		{
+			bestDevicePath = devicePaths[i];
+			bestDeviceTick = msgSystemState.value;
+		}
+
+		hid_close( device );
+	}
+
+	if ( !bestDevicePath.empty() )
+	{
+		return hid_open_path( bestDevicePath.c_str() );
+	}
+
+	return NULL;
+}
+
 int main(int argc, char **argv)
 {
 	if (hid_init())
@@ -238,7 +339,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	hid_device *device = hid_open( DEVICE_VID, DEVICE_PID, DEVICE_USAGE_PAGE, DEVICE_USAGE );
+	hid_device *device = hid_open_least_uptime( DEVICE_VID, DEVICE_PID, DEVICE_USAGE_PAGE, DEVICE_USAGE );
 	if ( ! device )
 	{
 		std::cerr << "*** Error: Device not found" << std::endl;
@@ -464,7 +565,7 @@ int main(int argc, char **argv)
 				}
 				else if ( s == "MOD" )
 				{
-					msg.alphas_mods[row] |= (0b0010000000000000 >> col);
+					msg.alphas_mods[row] |= (1<<col);
 				}
 				else
 				{

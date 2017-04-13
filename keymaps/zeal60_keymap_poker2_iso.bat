@@ -2,7 +2,7 @@
 
 zeal60 backlight_config_set_values ^
 use_split_backspace=0 ^
-use_split_left_shift=0 ^
+use_split_left_shift=1 ^
 use_split_right_shift=0 ^
 use_7u_spacebar=0 ^
 use_iso_enter=1 ^

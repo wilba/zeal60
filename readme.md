@@ -5,7 +5,7 @@ This is the command line tool for changing keymaps and backlight settings for th
 Zeal60 PCB uses firmware based on [QMK firmware](https://github.com/jackhumbert/qmk_firmware) with the required changes to support RGB backlight and changing keymaps via the PC.
 Unlike typical QMK usage, users will not need to change QMK source files, build and program new firmware. They only need to upload the latest "zeal60" firmware and use this tool to change keymaps and backlight settings.
 
-See [readme.txt](/readme.txt) for instructions on how to use this tool.
+See [readme.txt](docs/readme.adoc) for instructions on how to use this tool.
 
 ## Latest Build
 

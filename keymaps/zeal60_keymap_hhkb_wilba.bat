@@ -6,6 +6,7 @@ use_split_left_shift=0 ^
 use_split_right_shift=1 ^
 use_7u_spacebar=1 ^
 use_iso_enter=0 ^
+disable_hhkb_blocker_leds=1 ^
 disable_when_usb_suspended=1 ^
 disable_after_timeout=200 ^
 brightness=100 ^

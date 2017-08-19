@@ -382,6 +382,7 @@ int main(int argc, char **argv)
 		msg.use_split_right_shift = 0;
 		msg.use_7u_spacebar = 0;
 		msg.use_iso_enter = 0;
+		msg.disable_hhkb_blocker_leds = 0;
 		msg.disable_when_usb_suspended = 0;
 		msg.disable_after_timeout = 0;
 
@@ -451,6 +452,11 @@ int main(int argc, char **argv)
 				sscanf( value.c_str(), "%d", &intValue ) == 1 )
 			{
 				msg.use_iso_enter = intValue != 0;
+			}
+			else if ( name == "disable_hhkb_blocker_leds" &&
+				sscanf( value.c_str(), "%d", &intValue ) == 1 )
+			{
+				msg.disable_hhkb_blocker_leds = intValue != 0;
 			}
 			else if ( name == "disable_when_usb_suspended" &&
 				sscanf( value.c_str(), "%d", &intValue ) == 1 )
@@ -546,7 +552,7 @@ int main(int argc, char **argv)
 	}
 	else if ( command == "backlight_config_set_alphas_mods" )
 	{
-		if ( argc < 2 + MATRIX_ROWS * MATRIX_COLS )
+		if ( argc != 2 + MATRIX_ROWS * MATRIX_COLS )
 		{
 			std::cerr << "*** Error: Invalid number of arguments for '" << command << "'" << std::endl;
 			return -1;
@@ -593,7 +599,7 @@ int main(int argc, char **argv)
 	}
 	else if (command == "keymap")
 	{
-		if (argc < 2 + 1 + MATRIX_ROWS * MATRIX_COLS)
+		if (argc != 2 + 1 + MATRIX_ROWS * MATRIX_COLS)
 		{
 			std::cerr << "*** Error: Invalid number of arguments for '" << command << "'" << std::endl;
 			return -1;

@@ -154,9 +154,7 @@ NOTE: Keycode KC_TRNS means when this layer is active, use the keycode for the l
 
 Refer to QMK Firmware documentation for keycode symbols:
 
-https://github.com/jackhumbert/qmk_firmware
-https://github.com/jackhumbert/qmk_firmware/blob/master/doc/keycode.txt
-https://github.com/jackhumbert/qmk_firmware/wiki#switching-and-toggling-layers
+https://docs.qmk.fm/
 
 and a general understanding of how the keymaps work.
 

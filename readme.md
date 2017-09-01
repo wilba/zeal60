@@ -25,4 +25,45 @@ The last built executable will be copied into the keymaps directory, so the batc
 
 If you're interested in porting this code to Linux or OSX, let me know.
 
+### Building under Linux
+
+Make sure you have installed the hidapi library before. You can copy the compiled binary to your path (for example /usr/local/bin/).
+
+You may also be able to use the version of `hdiapi` from your distribution's package manager. Ubuntu would be these:
+
+```
+sudo apt install libusb-1.0-0-dev libhidapi-dev libhidapi-libusb0
+```
+
+#### Using Makefile
+To compile the Linux version you can use the supplied Makefile found in the `zeal60/` directrory:
+
+```
+cd zeal60
+make
+```
+
+#### Using bare commands
+
+You may need to adjust the paths here depending on how you installed hidapi.
+
+NOTE: The order of these flags is important!
+
+```
+g++ -c -I/usr/local/include/hidapi -Wno-write-strings keycode.cpp -o keycode.o
+g++ -c -I/usr/local/include/hidapi -Wno-write-strings zeal60.cpp -o zeal60.o
+g++ -I/usr/local/include/hidapi -L/usr/local/lib -Wno-write-strings zeal60.cpp keycode.cpp -lhidapi-libusb -o zeal60
+```
+
+#### Udev rules
+
+After compiling the Zeal60 command line tool, You need to either run it as root or place the provided udev rule file in `/etc/udev/rules.d/` 
+
+The provided udev rules file gives write access to the usb device for everyone in the zeal60 group. You should either change this to another group, or make this group and add yourself to it ( `groupadd zeal60; gpasswd -a user zeal60` ).
+
+#### Running the command under Linux
+
+`linux/zeal60_keymap_poker2_ansi.sh` is the basic Poker 2 keymap converted to a script for Linux.
+
+Make sure that you've put the `zeal60` binary you compiled in a place the script can find it (such as adding it to your 'PATH' environment variable).
 

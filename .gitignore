@@ -1,1 +1,3 @@
 *.exe
+zeal60/zeal60
+zeal60/*.o

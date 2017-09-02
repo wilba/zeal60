@@ -385,6 +385,15 @@ int main(int argc, char **argv)
 		msg.disable_hhkb_blocker_leds = 0;
 		msg.disable_when_usb_suspended = 0;
 		msg.disable_after_timeout = 0;
+		msg.brightness = 255;
+		msg.effect = 255;
+		msg.effect_speed = 0;
+		msg.color_1.h = 0;
+		msg.color_1.s = 255;
+		msg.color_1.v = 255;
+		msg.color_2.h = 127;
+		msg.color_2.s = 255;
+		msg.color_2.v = 255;
 
 		msg.caps_lock_indicator_color.h = 0;
 		msg.caps_lock_indicator_color.s = 0;
@@ -477,6 +486,11 @@ int main(int argc, char **argv)
 				sscanf( value.c_str(), "%d", &intValue ) == 1 )
 			{
 				msg.effect = intValue;
+			}
+			else if ( name == "effect_speed" &&
+				sscanf( value.c_str(), "%d", &intValue ) == 1 )
+			{
+				msg.effect_speed = intValue;
 			}
 			else if ( name == "color_1" &&
 				parse_hsv_color_string2( value.c_str(), &hsvValue ) )

@@ -93,7 +93,7 @@ bool parse_indicator_row_column( const char *string, int *row, int *column )
 }
 
 hid_device *
-hid_open( unsigned short vendor_id, unsigned short product_id, unsigned short usage_page, unsigned short usage )
+hid_open( unsigned short vendor_id, unsigned short product_id, unsigned short interface_number )
 {
 	hid_device *device = NULL;
 	struct hid_device_info *deviceInfos;
@@ -103,15 +103,8 @@ hid_open( unsigned short vendor_id, unsigned short product_id, unsigned short us
 	currentDeviceInfo = deviceInfos;
 	while ( currentDeviceInfo )
 	{
-		//usage_page and usage are windows/mac only
-		#ifndef __linux__
-		if ( currentDeviceInfo->usage_page == usage_page &&
-			 currentDeviceInfo->usage == usage )
+		if ( currentDeviceInfo->interface_number == interface_number )
 		{
-		#else
-		if ( currentDeviceInfo->interface_number == 2 )
-		{
-		#endif
 			if ( foundDeviceInfo )
 			{
 				// More than one matching device.
@@ -136,7 +129,7 @@ hid_open( unsigned short vendor_id, unsigned short product_id, unsigned short us
 }
 
 std::vector<std::string>
-hid_get_device_paths( unsigned short vendor_id, unsigned short product_id, unsigned short usage_page, unsigned short usage )
+hid_get_device_paths( unsigned short vendor_id, unsigned short product_id, unsigned short interface_number )
 {
 	std::vector<std::string> devicePaths;
 	struct hid_device_info *deviceInfos;
@@ -146,15 +139,8 @@ hid_get_device_paths( unsigned short vendor_id, unsigned short product_id, unsig
 	currentDeviceInfo = deviceInfos;
 	while ( currentDeviceInfo )
 	{
-		//usage_page and usage are windows/mac only
-		#ifndef __linux__
-		if ( currentDeviceInfo->usage_page == usage_page &&
-			 currentDeviceInfo->usage == usage )
+		if ( currentDeviceInfo->interface_number == interface_number )
 		{
-		#else
-		if ( currentDeviceInfo->interface_number == 2 )
-		{
-		#endif
 			devicePaths.push_back( currentDeviceInfo->path );
 		}
 		currentDeviceInfo = currentDeviceInfo->next;
@@ -278,9 +264,9 @@ bool system_get_state( hid_device *device, msg_system_state *msg )
 
 
 hid_device *
-hid_open_least_uptime( unsigned short vendor_id, unsigned short product_id, unsigned short usage_page, unsigned short usage )
+hid_open_least_uptime( unsigned short vendor_id, unsigned short product_id, unsigned short interface_number )
 {
-	std::vector<std::string> devicePaths = hid_get_device_paths(vendor_id, product_id, usage_page, usage );
+	std::vector<std::string> devicePaths = hid_get_device_paths(vendor_id, product_id, interface_number );
 
 	// early abort
 	if ( devicePaths.size() == 0 )
@@ -353,7 +339,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	hid_device *device = hid_open_least_uptime( DEVICE_VID, DEVICE_PID, DEVICE_USAGE_PAGE, DEVICE_USAGE );
+	hid_device *device = hid_open_least_uptime( DEVICE_VID, DEVICE_PID, DEVICE_INTERFACE_NUMBER );
 	if ( ! device )
 	{
 		std::cerr << "*** Error: Device not found" << std::endl;

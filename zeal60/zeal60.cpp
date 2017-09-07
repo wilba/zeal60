@@ -1,7 +1,9 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
+#include <cstring>
 #include <string>
 #include <map>
 #include <iostream>
@@ -9,13 +11,13 @@
 #include <vector>
 #include <string>
 
-#include "hidapi.h"
-
 // Headers needed for sleeping.
 #ifdef _WIN32
 #include <windows.h>
+#include "hidapi.h"
 #else
 #include <unistd.h>
+#include "hidapi/hidapi.h"
 #endif
 
 #ifdef _MSC_VER
@@ -101,9 +103,15 @@ hid_open( unsigned short vendor_id, unsigned short product_id, unsigned short us
 	currentDeviceInfo = deviceInfos;
 	while ( currentDeviceInfo )
 	{
+		//usage_page and usage are windows/mac only
+		#ifndef __linux__
 		if ( currentDeviceInfo->usage_page == usage_page &&
 			 currentDeviceInfo->usage == usage )
 		{
+		#else
+		if ( currentDeviceInfo->interface_number == 2 )
+		{
+		#endif
 			if ( foundDeviceInfo )
 			{
 				// More than one matching device.
@@ -138,9 +146,15 @@ hid_get_device_paths( unsigned short vendor_id, unsigned short product_id, unsig
 	currentDeviceInfo = deviceInfos;
 	while ( currentDeviceInfo )
 	{
+		//usage_page and usage are windows/mac only
+		#ifndef __linux__
 		if ( currentDeviceInfo->usage_page == usage_page &&
 			 currentDeviceInfo->usage == usage )
 		{
+		#else
+		if ( currentDeviceInfo->interface_number == 2 )
+		{
+		#endif
 			devicePaths.push_back( currentDeviceInfo->path );
 		}
 		currentDeviceInfo = currentDeviceInfo->next;

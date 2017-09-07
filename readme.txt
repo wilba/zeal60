@@ -18,13 +18,16 @@ The default backlight controls are on layer 3, which is (by default) enabled by 
  6= Cycle Horizontal
  7= Cycle Vertical
  8= Jellybean Raindrops
- 9= Custom Key Colors
+ 9= Radial Color 1
+10= Radial All Hues
+11= Custom Key Colors
 
 3 / 4 - color 1 hue -/+
 E / R - color 1 sat -/+
 5 / 6 - color 2 hue -/+
 T / Y - color 2 sat -/+
 - / + - brightness -/+
+[ / ] - effect speed -/+
 
 
 ALSO:
@@ -66,6 +69,10 @@ Configures which switches are being used, so that LEDs not under a switch will b
 It needs to be combined with soldering the jumpers on the PCB to match the switches being used, to connect one of two LEDs to the LED matrix.
 0 is false, 1 is true. e.g. use_split_backspace=1 enables split backspace LEDs.
 
+disable_hhkb_blocker_leds=<0|1>
+
+Disable the LEDs under the "blockers" of an HHKB layout.
+
 disable_when_usb_suspended=<0|1>
 
 Turn off backlight when the USB is suspended, i.e. when the PC is in Sleep/Hibernate/Shutdown mode.
@@ -81,6 +88,10 @@ Global brightness setting, N in range 0-100
 effect=N
 
 Backlight effect, N in range 0-9 (see above for list)
+
+effect_speed=N
+
+Backlight effect speed, N in range 0-3
 
 color_1=H,S,V
 color_2=H,S,V

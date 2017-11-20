@@ -482,6 +482,16 @@ LookupEntry g_keycodeLookup[] =
     LOOKUP_ENTRY( MOD_RGUI ),
 	LOOKUP_ENTRY( MOD_HYPR ),
 	LOOKUP_ENTRY( MOD_MEH ),
+
+    // RGB functionality
+    LOOKUP_ENTRY( RGB_TOG ),
+    LOOKUP_ENTRY( RGB_MOD ),
+    LOOKUP_ENTRY( RGB_HUI ),
+    LOOKUP_ENTRY( RGB_HUD ),
+    LOOKUP_ENTRY( RGB_SAI ),
+    LOOKUP_ENTRY( RGB_SAD ),
+    LOOKUP_ENTRY( RGB_VAI ),
+    LOOKUP_ENTRY( RGB_VAD ),
 };
 
 bool stringToEnum( const char *string, uint16_t *value )

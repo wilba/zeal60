@@ -35,6 +35,32 @@ You may also be able to use the version of `hdiapi` from your distribution's pac
 sudo apt install libusb-1.0-0-dev libhidapi-dev libhidapi-libusb0
 ```
 
+### Building under macOS
+
+Currently the hidapi library does not support interface numbers for devices in macOS. There is an
+[open pull request](https://github.com/signal11/hidapi/pull/380) to add interface number support for HID devices only.
+
+Follow the instructions below to compile hidapi with interface number support:
+
+```
+git clone https://github.com/signal11/hidapi.git
+cd hidapi
+git remote add dylanmckay https://github.com/dylanmckay/hidapi.git
+git fetch dylanmckay
+git checkout mac-hid-interface-support
+./bootstap
+./configure
+make
+sudo make install
+```
+
+After compileing hidapi, you may build zeal60 using the Makefile found in the `zeal60/` directory:
+
+```
+cd zeal60
+make
+```
+
 #### Using Makefile
 To compile the Linux version you can use the supplied Makefile found in the `zeal60/` directrory:
 

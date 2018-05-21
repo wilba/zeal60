@@ -16,16 +16,10 @@
 #include <cstring>
 #include <string>
 
-struct LookupEntry
-{
-	uint16_t value;
-	char *string;
-};
-
 // Helper macro to turn an enum into a value/string pair
 #define LOOKUP_ENTRY(x) { x, #x }
 
-LookupEntry g_keycodeLookup[] =
+KeycodeStringValue g_keycodeStringValue[] =
 {
 	// Shortened names first, so reverse lookups
 	// will return the shortened name first
@@ -378,9 +372,53 @@ LookupEntry g_keycodeLookup[] =
 	// QMK keycodes
 	LOOKUP_ENTRY( RESET ),
 	LOOKUP_ENTRY( DEBUG ),
-	// skip some to avoid confusion
-	// when adapting to other keyboards,
-	// add them here
+	LOOKUP_ENTRY( KC_GESC ),
+	LOOKUP_ENTRY( GRAVE_ESC ),
+
+    // Backlight functionality
+	// (for future support of other keyboards)
+	LOOKUP_ENTRY( BL_ON ),
+	LOOKUP_ENTRY( BL_OFF ),
+	LOOKUP_ENTRY( BL_DEC ),
+	LOOKUP_ENTRY( BL_INC ),
+	LOOKUP_ENTRY( BL_TOGG ),
+	LOOKUP_ENTRY( BL_STEP ),
+	LOOKUP_ENTRY( BL_BRTG ),
+
+    // RGB functionality
+	// (for future support of other keyboards)
+	LOOKUP_ENTRY( RGB_TOG ),
+	LOOKUP_ENTRY( RGB_MOD ), // RGB_MODE_FORWARD
+	LOOKUP_ENTRY( RGB_SMOD), // RGB_MODE_FORWARD
+	LOOKUP_ENTRY( RGB_MODE_FORWARD ),
+	LOOKUP_ENTRY( RGB_RMOD ), // RGB_MODE_REVERSE
+	LOOKUP_ENTRY( RGB_MODE_REVERSE ),
+	LOOKUP_ENTRY( RGB_HUI ),
+	LOOKUP_ENTRY( RGB_HUD ),
+	LOOKUP_ENTRY( RGB_SAI ),
+	LOOKUP_ENTRY( RGB_SAD ),
+	LOOKUP_ENTRY( RGB_VAI ),
+	LOOKUP_ENTRY( RGB_VAD ),
+	LOOKUP_ENTRY( RGB_SPI ),
+	LOOKUP_ENTRY( RGB_SPD ),
+	LOOKUP_ENTRY( RGB_M_P ), // RGB_MODE_PLAIN
+	LOOKUP_ENTRY( RGB_MODE_PLAIN ),
+	LOOKUP_ENTRY( RGB_M_B ), // RGB_MODE_BREATHE
+	LOOKUP_ENTRY( RGB_MODE_BREATHE ),
+	LOOKUP_ENTRY( RGB_M_R ), // RGB_MODE_RAINBOW
+	LOOKUP_ENTRY( RGB_MODE_RAINBOW ),
+	LOOKUP_ENTRY( RGB_M_SW ), // RGB_MODE_SWIRL
+	LOOKUP_ENTRY( RGB_MODE_SWIRL ),
+	LOOKUP_ENTRY( RGB_M_SN ), // RGB_MODE_SNAKE
+	LOOKUP_ENTRY( RGB_MODE_SNAKE ),
+	LOOKUP_ENTRY( RGB_M_K ), // RGB_MODE_KNIGHT
+	LOOKUP_ENTRY( RGB_MODE_KNIGHT ),
+	LOOKUP_ENTRY( RGB_M_X ), // RGB_MODE_XMAS
+	LOOKUP_ENTRY( RGB_MODE_XMAS ),
+	LOOKUP_ENTRY( RGB_M_G ), // RGB_MODE_GRADIENT
+	LOOKUP_ENTRY( RGB_MODE_GRADIENT ),
+
+
 	LOOKUP_ENTRY( KC_LSPO ),
 	LOOKUP_ENTRY( KC_RSPC ),
 
@@ -484,13 +522,27 @@ LookupEntry g_keycodeLookup[] =
 	LOOKUP_ENTRY( MOD_MEH ),
 };
 
+KeycodeStringValue *getKeycodeStringValue(size_t index)
+{
+	if ( index >= 0 && index < sizeof(g_keycodeStringValue)/sizeof(g_keycodeStringValue[0]) )
+	{
+		return &(g_keycodeStringValue[index]);
+	}
+	return NULL;
+}
+
+size_t getKeycodeStringValueCount()
+{
+	return sizeof(g_keycodeStringValue)/sizeof(g_keycodeStringValue[0]);
+}
+
 bool stringToEnum( const char *string, uint16_t *value )
 {
-	for ( int i = 0; i < sizeof( g_keycodeLookup ) / sizeof( g_keycodeLookup[1] ); i++ )
+	for ( size_t i = 0; i < getKeycodeStringValueCount(); i++ )
 	{
-		if ( strcmp( g_keycodeLookup[i].string, string ) == 0 )
+		if ( strcmp( getKeycodeStringValue(i)->string, string ) == 0 )
 		{
-			*value = g_keycodeLookup[i].value;
+			*value = getKeycodeStringValue(i)->value;
 			return true;
 		}
 	}

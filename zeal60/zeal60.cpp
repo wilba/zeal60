@@ -331,12 +331,47 @@ hid_open_least_uptime( unsigned short vendor_id, unsigned short product_id, unsi
 	return NULL;
 }
 
+void
+hid_test(void)
+{
+	struct hid_device_info *devs, *cur_dev;
+
+	devs = hid_enumerate(0x0, 0x0);
+	cur_dev = devs;	
+	while (cur_dev) {
+		printf("Device Found\n  type: %04hx %04hx\n  path: %s\n  serial_number: %ls", cur_dev->vendor_id, cur_dev->product_id, cur_dev->path, cur_dev->serial_number);
+		printf("\n");
+		printf("  Manufacturer: %ls\n", cur_dev->manufacturer_string);
+		printf("  Product:      %ls\n", cur_dev->product_string);
+		printf("  Release:      %hx\n", cur_dev->release_number);
+		printf("  Interface:    %d\n",  cur_dev->interface_number);
+		printf("\n");
+		cur_dev = cur_dev->next;
+	}
+	hid_free_enumeration(devs);
+}
+
 int main(int argc, char **argv)
 {
 	if (hid_init())
 	{
 		std::cerr << "*** Error: hidapi initialization failed" << std::endl;
 		return -1;
+	}
+
+	if (argc <= 1)
+	{
+		// No args, do nothing
+		return 0;
+	}
+
+	// First arg is the command
+	std::string command = argv[1];
+
+	if ( command == "hidtest" )
+	{
+		hid_test();
+		return 0;
 	}
 
 	hid_device *device = hid_open_least_uptime( DEVICE_VID, DEVICE_PID, DEVICE_INTERFACE_NUMBER );
@@ -362,15 +397,6 @@ int main(int argc, char **argv)
 		hid_close( device );
 		return -1;
 	}
-
-	if (argc <= 1)
-	{
-		// No args, do nothing
-		return 0;
-	}
-
-	// First arg is the command
-	std::string command = argv[1];
 
 	if ( command == "backlight_config_set_values" )
 	{

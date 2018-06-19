@@ -266,7 +266,7 @@ bool system_get_state( hid_device *device, msg_system_state *msg )
 hid_device *
 hid_open_least_uptime( unsigned short vendor_id, unsigned short product_id, unsigned short interface_number )
 {
-	std::vector<std::string> devicePaths = hid_get_device_paths(vendor_id, product_id, interface_number );
+	std::vector<std::string> devicePaths = hid_get_device_paths( vendor_id, product_id, interface_number );
 
 	// early abort
 	if ( devicePaths.size() == 0 )

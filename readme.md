@@ -93,3 +93,12 @@ The provided udev rules file gives write access to the usb device for everyone i
 
 Make sure that you've put the `zeal60` binary you compiled in a place the script can find it (such as adding it to your 'PATH' environment variable).
 
+Also, make sure you have installed udev rules correctly for the Zeal keyboards:
+
+```
+sudo cp ./linux/10-zeal60.rules /etc/udev/rules.d/
+
+# Then reload the rules:
+sudo udevadm control --reload-rules && udevadm trigger
+```
+

@@ -83,7 +83,16 @@ g++ -I/usr/local/include/hidapi -L/usr/local/lib -Wno-write-strings zeal60.cpp k
 
 #### Udev rules
 
-After compiling the Zeal60 command line tool, You need to either run it as root or place the provided udev rule file in `/etc/udev/rules.d/` 
+After compiling the Zeal60 command line tool, You need to either run it as root or place the provided udev rule file in `/etc/udev/rules.d/`. After placing the file there, you either need to reboot (if using the zeal60 group), or reload the rules.
+
+The process is something like this:
+
+```
+sudo cp ./linux/10-zeal60.rules /etc/udev/rules.d/
+
+# Reload the rules:
+sudo udevadm control --reload-rules && udevadm trigger
+```
 
 The provided udev rules file gives write access to the usb device for everyone in the zeal60 group. You should either change this to another group, or make this group and add yourself to it ( `groupadd zeal60; gpasswd -a user zeal60` ).
 
@@ -92,4 +101,7 @@ The provided udev rules file gives write access to the usb device for everyone i
 `linux/zeal60_keymap_poker2_ansi.sh` is the basic Poker 2 keymap converted to a script for Linux.
 
 Make sure that you've put the `zeal60` binary you compiled in a place the script can find it (such as adding it to your 'PATH' environment variable).
+
+Also, make sure you have installed udev rules correctly for the Zeal keyboards!
+
 

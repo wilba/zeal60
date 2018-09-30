@@ -278,9 +278,9 @@ bool dynamic_keymap_set_keycode( hid_device *device, uint8_t layer, uint8_t row,
 	return send_message( device, id_dynamic_keymap_set_keycode, msg, sizeof(msg) );
 }
 
-bool dynamic_keymap_clear_all( hid_device *device )
+bool dynamic_keymap_reset( hid_device *device )
 {
-	return send_message( device, id_dynamic_keymap_clear_all );
+	return send_message( device, id_dynamic_keymap_reset );
 }
 
 bool backlight_config_set_value_uint8( hid_device *device, uint8_t value_id, uint8_t value )
@@ -374,9 +374,9 @@ hid_open_least_uptime( unsigned short vendor_id, unsigned short product_id, unsi
 		}
 
 		uint32_t thisDeviceTick = 0;
-		if ( !get_keyboard_value_uint32( device, 0x01, &thisDeviceTick ) )
+		if ( !get_keyboard_value_uint32( device, id_uptime, &thisDeviceTick ) )
 		{
-			std::cerr << "*** Error: Error getting system state" << std::endl;
+			std::cerr << "*** Error: Error getting uptime" << std::endl;
 			hid_close( device );
 			continue;
 		}
@@ -442,6 +442,14 @@ int main(int argc, char **argv)
 	}
 
 	hid_device *device = hid_open_least_uptime( DEVICE_VID, DEVICE_PID, DEVICE_INTERFACE_NUMBER );
+	// Extreme hack, zeal60.exe being used to find a RAMA M60-A device
+	// This is a short-term workaround until I refactor the code...
+	// Really don't want to make a "m60a.exe" that's essentially zeal60.exe compiled with different VID/PID
+	if ( !device && DEVICE_VID == 0xFEED && DEVICE_PID == 0x6060)
+	{
+		device = hid_open_least_uptime( 0x5241, 0x060A, DEVICE_INTERFACE_NUMBER );
+	}
+
 	if ( ! device )
 	{
 		std::cerr << "*** Error: Device not found" << std::endl;
@@ -499,6 +507,34 @@ int main(int argc, char **argv)
 		}
 		hid_close( device );
 		return 0;	
+	}
+	else if ( command == "eeprom_reset" )
+	{
+		res = send_message( device, id_eeprom_reset );
+		if ( ! res )
+		{
+			std::cerr << "*** Error: Error resetting EEPROM" << std::endl;
+			hid_close( device );
+			return -1;
+		}
+
+		hid_close( device );
+		std::cout << "EEPROM reset" << std::endl;
+		return 0;
+	}
+	else if ( command == "bootloader_jump" )
+	{
+		res = send_message( device, id_bootloader_jump );
+		if ( ! res )
+		{
+			std::cerr << "*** Error: Error jumping to bootloader" << std::endl;
+			hid_close( device );
+			return -1;
+		}	
+		
+		hid_close( device );
+		std::cout << "Jumped to bootloader" << std::endl;
+		return 0;
 	}
 	else if ( command == "backlight_config_set_value" ||
 			 command == "backlight_config_set_values" )

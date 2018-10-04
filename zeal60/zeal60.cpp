@@ -331,6 +331,22 @@ bool backlight_config_save(  hid_device *device )
 	return send_message( device, id_backlight_config_save );
 }
 
+bool backlight_config_get_value_uint32( hid_device *device, uint8_t value_id, uint32_t *value )
+{
+	uint8_t msg[5];
+	msg[0] = value_id;
+	msg[1] = 0xFF;
+	msg[2] = 0xFF;
+	msg[3] = 0xFF;
+	msg[4] = 0xFF;
+	if ( send_message( device, id_backlight_config_get_value, msg, sizeof(msg), msg, sizeof(msg) ) )
+	{
+		*value = ( msg[1] << 24 ) | ( msg[2] << 16 ) | ( msg[3] << 8 ) | msg[4];
+		return true;
+	}
+	return false;
+}
+
 hid_device *
 hid_open_least_uptime( unsigned short vendor_id, unsigned short product_id, unsigned short interface_number )
 {
@@ -475,35 +491,10 @@ int main(int argc, char **argv)
 
 	if ( command == "debug" )
 	{
-		/*
-		bool ok = true;
-		for ( int row = 0; row < MATRIX_ROWS && ok; row++ )
+		uint32_t value = 0;
+		if ( backlight_config_get_value_uint32( device, id_layer_1_indicator_row_col, &value ) )
 		{
-			for (int col = 0; col < MATRIX_COLS && ok; col++)
-			{
-				uint16_t keycode;
-				if ( !dynamic_keymap_get_keycode( device, 0, row, col, &keycode ) )
-				{
-					std::cerr << "*** Error: Error getting keycode" << std::endl;
-					hid_close( device );
-					return -1;
-				}
-				printf("%04x ", keycode);
-			}
-			printf("\n");
-		}*/
-
-		while ( 1 )
-		{
-			uint32_t value = 0;
-			if ( get_keyboard_value_uint32( device, 0x01, &value ) )
-			{
-				std::cout << value << std::endl;
-			}
-			else
-			{
-				break;
-			}
+			printf("%04X\n", value );
 		}
 		hid_close( device );
 		return 0;	
@@ -737,6 +728,7 @@ int main(int argc, char **argv)
 			std::cerr << "*** Error: Invalid number of arguments for '" << command << "'" << std::endl;
 			return -1;
 		}
+
 		int layer = atoi(argv[2]);
 		if ( layer < 0 || layer > 3)
 		{
@@ -783,7 +775,48 @@ int main(int argc, char **argv)
 		std::cout << "Keymap layer " << layer << " saved" << std::endl;
 		return 0;
 	}
+	else if (command == "get_keymap")
+	{
+		if (argc != 2 + 1)
+		{
+			std::cerr << "*** Error: Invalid number of arguments for '" << command << "'" << std::endl;
+			return -1;
+		}
+		int layer = atoi(argv[2]);
+		if ( layer < 0 || layer > 3)
+		{
+			std::cerr << "*** Error: Invalid layer '" << argv[2] << "'" << std::endl;
+			return -1;
+		}
 
+		uint16_t keymap[MATRIX_ROWS][MATRIX_COLS];
+		int arg = 3;
+		for ( int row = 0; row < MATRIX_ROWS; row++ )
+		{
+			for (int column = 0; column < MATRIX_COLS; column++)
+			{
+				if ( ! dynamic_keymap_get_keycode( device, layer, row, column, &(keymap[row][column]) ) )
+				{
+					std::cerr << "*** Error: Error getting keymap layer " << layer << " row " << row << " column " << column << std::endl;
+					hid_close( device );
+					return -1;
+				}
+			}
+		}
+
+		for ( int row = 0; row < MATRIX_ROWS; row++ )
+		{
+			for (int column = 0; column < MATRIX_COLS; column++)
+			{
+				std::string keycodeString = valueToString( keymap[row][column] );
+				printf("%-7s ", keycodeString.c_str());
+			}
+			printf("\n");
+		}
+
+		hid_close( device );
+		return 0;
+	}
 	std::cerr << "*** Error: Invalid command '" << command << "'" << std::endl;
 	return -1;
 }

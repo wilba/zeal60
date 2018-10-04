@@ -174,7 +174,8 @@ You CAN nest them, likesuchas LALT(LCTL(KC_DEL))
 
 Avoid using DF(layer) unless you REALLY know what you are doing.
 
-NOTE: Expert QMK users can use a hex string like "0x12FE" to specify any QMK keycode, or compile their own custom QMK firmware with actions/macros and use FN0-FN31 to trigger them.
+QMK keycodes that specify multiple mod keys need a ^ before the |  e.g. OSM(MOD_LCTL^|MOD_LSFT^|MOD_LALT)
+
 
 Some Interesting QMK keycodes:
 
@@ -216,45 +217,4 @@ S1_DEC - color 1 saturation decrement
 S1_INC - color 1 saturation increment
 S2_DEC - color 2 saturation increment
 S2_INC - color 2 saturation increment
-
-
-zeal60 colors <named colors> <keymap>
-
-This command sets the colors used in the "Custom Key Colors" backlight effect, allowing the user to change the color of every key.
-Rather than a huge 2D array of RGB colors (hard to change), this command lets you bind a color in HSV (hue, saturation, brightness) to a name, and then use that name in a "keymap".
-
-Let's break down what's happening in the example batch file:
-
-zeal60 colors ^
-ROW0=hsv(260,100,100) ^
-ROW1=hsv(270,95,100) ^
-ROW2=hsv(280,90,100) ^
-ROW3=hsv(290,85,100) ^
-ROW4=hsv(300,80,100) ^
-MODS=hsv(180,100,100) ^
-MODS     ROW0     ROW0     ROW0     ROW0     ROW0     ROW0     ROW0     ROW0     ROW0     ROW0     ROW0     ROW0     MODS    ^
-MODS     ROW1     ROW1     ROW1     ROW1     ROW1     ROW1     ROW1     ROW1     ROW1     ROW1     ROW1     ROW1     MODS    ^
-MODS     ROW2     ROW2     ROW2     ROW2     ROW2     ROW2     ROW2     ROW2     ROW2     ROW2     ROW2     MODS     MODS    ^
-MODS     MODS     ROW3     ROW3     ROW3     ROW3     ROW3     ROW3     ROW3     ROW3     ROW3     ROW3     MODS     MODS    ^
-MODS     MODS     MODS     ROW4     ROW4     ROW4     ROW4     ROW4     ROW4     ROW4     ROW4     MODS     MODS     MODS    
-
-This defines 6 named colors ROW0, ROW1, ROW2, ROW3, ROW4, MODS.
-"hsv(...)" defines a color with hue 260, saturation 100%, brightness 100%
-Use http://colorizer.org/ to assist in choosing HSV values.
-
-NOTE: spaces cannot be present when defining named colors, or broken across multiple lines with "^".
-NOTE: the "Custom Key Colors" backlight effect uses the global brightness control, so the brightness of a named color is not used.
-
-The first occurrence of text which isn't a named color (i.e. doesn't have the "=") will be the start of a "keymap" of where to use those colors.
-
-In this example, the "MODS" color is used in the locations of modifier keys, and the other colors are used for the alphanumeric keys, a different one per row.
-The effect is something similar to the Alphas/Mods backlight effect, but with a vertical color gradient for the alphas.
-
-You can define as many colors as you like, and use any name you like, as long as it does not contain spaces or "=".
-It is preferrable to keep names short and of the same length, so it's easy to construct the "keymap" with copy/paste.
-
-NOTE: the "keymap" for colors is the same arrangement as the keymap for keycodes, thus:
- - The right key of split backspace is at [2,13].
- - The left spacebar stabilizer LED is at [4,3]
- - The right spacebar stabilizer LED is at [4,9] (6.25U spacebar layout) or [4,10] (7U spacebar layout)
 

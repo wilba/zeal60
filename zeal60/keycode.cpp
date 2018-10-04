@@ -20,6 +20,23 @@
 // Helper macro to turn an enum into a value/string pair
 #define LOOKUP_ENTRY(x) { x, #x }
 
+KeycodeStringValue g_modStringValue[] = 
+{
+	// These aren't really keycodes but they're needed
+	// for the MT(mod,kc) command
+    LOOKUP_ENTRY( MOD_LCTL ),
+    LOOKUP_ENTRY( MOD_LSFT ),
+    LOOKUP_ENTRY( MOD_LALT ),
+    LOOKUP_ENTRY( MOD_LGUI ),
+    LOOKUP_ENTRY( MOD_RCTL ),
+    LOOKUP_ENTRY( MOD_RSFT ),
+    LOOKUP_ENTRY( MOD_RALT ),
+    LOOKUP_ENTRY( MOD_RGUI ),
+	// These screw up reverse lookup
+	//LOOKUP_ENTRY( MOD_HYPR ),
+	//LOOKUP_ENTRY( MOD_MEH ),
+};
+
 KeycodeStringValue g_keycodeStringValue[] =
 {
 	// Shortened names first, so reverse lookups
@@ -508,36 +525,37 @@ KeycodeStringValue g_keycodeStringValue[] =
 
 	// Some aliases for QMK special keycodes
 	LOOKUP_ENTRY( TG_NKRO ), // MAGIC_TOGGLE_NKRO
-
-	// These aren't really keycodes but they're needed
-	// for the MT(mod,kc) command
-    LOOKUP_ENTRY( MOD_LCTL ),
-    LOOKUP_ENTRY( MOD_LSFT ),
-    LOOKUP_ENTRY( MOD_LALT ),
-    LOOKUP_ENTRY( MOD_LGUI ),
-    LOOKUP_ENTRY( MOD_RCTL ),
-    LOOKUP_ENTRY( MOD_RSFT ),
-    LOOKUP_ENTRY( MOD_RALT ),
-    LOOKUP_ENTRY( MOD_RGUI ),
-	LOOKUP_ENTRY( MOD_HYPR ),
-	LOOKUP_ENTRY( MOD_MEH ),
 };
-
-KeycodeStringValue *getKeycodeStringValue(size_t index)
-{
-	if ( index >= 0 && index < sizeof(g_keycodeStringValue)/sizeof(g_keycodeStringValue[0]) )
-	{
-		return &(g_keycodeStringValue[index]);
-	}
-	return NULL;
-}
 
 size_t getKeycodeStringValueCount()
 {
 	return sizeof(g_keycodeStringValue)/sizeof(g_keycodeStringValue[0]);
 }
 
-bool stringToEnum( const char *string, uint16_t *value )
+KeycodeStringValue *getKeycodeStringValue(size_t index)
+{
+	if ( index >= 0 && index < getKeycodeStringValueCount() )
+	{
+		return &(g_keycodeStringValue[index]);
+	}
+	return NULL;
+}
+
+size_t getModStringValueCount()
+{
+	return sizeof(g_modStringValue)/sizeof(g_modStringValue[0]);
+}
+
+KeycodeStringValue *getModStringValue( size_t index )
+{
+	if ( index >= 0 && index < getModStringValueCount() )
+	{
+		return &(g_modStringValue[index]);
+	}
+	return NULL;
+}
+
+bool stringToKeycodeEnum( const char *string, uint16_t *value )
 {
 	for ( size_t i = 0; i < getKeycodeStringValueCount(); i++ )
 	{
@@ -548,6 +566,37 @@ bool stringToEnum( const char *string, uint16_t *value )
 		}
 	}
 	return false;
+}
+
+bool stringToModEnum( const char *string, uint16_t *value )
+{
+	// string might be some OR-ed together mod strings.
+	*value = 0;
+
+	std::string s = string;
+	while ( ! s.empty() )
+	{
+		int firstPipe = s.find("|");
+		std::string token = s.substr(0, firstPipe);
+
+		KeycodeStringValue *v = NULL;
+		for ( size_t i = 0; i < getModStringValueCount(); i++ )
+		{
+			if ( strcmp( getModStringValue(i)->string, token.c_str() ) == 0 )
+			{
+				v = getModStringValue(i);
+				break;
+			}
+		}
+		if ( ! v )
+		{
+			return false;
+		}
+		*value |= v->value;
+		s = ( firstPipe != std::string::npos ) ? s.substr( firstPipe+1, s.length() ) : "";
+	}
+
+	return true;
 }
 
 // Parse C-style hex literal e.g "0x12FE"
@@ -583,6 +632,9 @@ bool stringToNumber( const char *string, uint16_t *value )
 
 bool macroExpand1( const char *macro, const char *arg1, uint16_t *value )
 {
+	// Just like compiled QMK keymaps, there is no argument checking.
+	// i.e. OSM(mod) or OSL(layer) could be used with a keycode.
+	// TODO: add validation
 	std::string m = macro;
 	uint16_t value1 = 0;
 	if ( ! stringToValue( arg1, &value1 ) )
@@ -600,10 +652,11 @@ bool macroExpand1( const char *macro, const char *arg1, uint16_t *value )
 	_EXPAND(RSFT);
 	_EXPAND(RALT);
 	_EXPAND(RGUI);
-	_EXPAND(HYPR);
-	_EXPAND(MEH);
-	_EXPAND(LCAG);
-	_EXPAND(ALTG);
+
+	//_EXPAND(HYPR);
+	//_EXPAND(MEH);
+	//_EXPAND(LCAG);
+	//_EXPAND(ALTG);
 	//_EXPAND(SCMD);
 	//_EXPAND(SWIN);
 
@@ -611,12 +664,19 @@ bool macroExpand1( const char *macro, const char *arg1, uint16_t *value )
 	_EXPAND(S);
 	_EXPAND(F);
 	_EXPAND(M);
+
+	// Layer changing
 	_EXPAND(TO);
 	_EXPAND(MO);
 	_EXPAND(DF);
 	_EXPAND(TG);
 	_EXPAND(OSL);
 	_EXPAND(OSM);
+
+	// I think I never implemented this because of the
+	// Zeal60 FN_TT13/FN_TT23 special keycodes
+	//_EXPAND(TT);
+
 	_EXPAND(CTL_T);
 	_EXPAND(SFT_T);
 	_EXPAND(ALT_T);
@@ -641,21 +701,38 @@ bool macroExpand2( const char *macro, const char *arg1, const char *arg2, uint16
 	std::string m = macro;
 	uint16_t value1 = 0;
 	uint16_t value2 = 0;
-	if ( ! stringToValue( arg1, &value1 ) ||
-		! stringToValue( arg2, &value2 ) )
-	{
-		return false;
-	}
 
 	if ( m == "LT" )
 	{
-		*value = LT( value1, value2 );
-		return true;
+		// LT(layer,keycode)
+		if ( stringToNumber( arg1, &value1 ) &&
+			stringToKeycodeEnum( arg2, &value2 ) &&
+			value2 <= 0xFF )
+		{
+			*value = LT( value1, value2 );
+			return true;
+		}
+	}
+	if ( m == "LM" )
+	{
+		// LM(layer,mod)
+		if ( stringToNumber( arg1, &value1 ) &&
+			stringToModEnum( arg2, &value2 ) )
+		{
+			*value = LM( value1, value2 );
+			return true;
+		}
 	}
 	if ( m == "MT" )
 	{
-		*value = MT( value1, value2 );
-		return true;
+		// MT(mod,keycode)
+		if ( stringToModEnum( arg1, &value1 ) &&
+			stringToKeycodeEnum( arg2, &value2 ) &&
+			value2 <= 0xFF )
+		{
+			*value = MT( value1, value2 );
+			return true;
+		}
 	}
 
 	return false;
@@ -728,7 +805,11 @@ bool stringToValue( const char *string, uint16_t *value )
 	{
 		return true;
 	}
-	if ( stringToEnum( string, value ) )
+	if ( stringToKeycodeEnum( string, value ) )
+	{
+		return true;
+	}
+	if ( stringToModEnum( string, value ) )
 	{
 		return true;
 	}
@@ -742,4 +823,131 @@ bool stringToValue( const char *string, uint16_t *value )
 	}
 
 	return false;
+}
+
+std::string valueToModString( uint16_t value )
+{
+	// Mod values are bitmasks.
+	// value could be bitwise OR of multiple mod values.
+	std::string modString;
+	for ( size_t i = 0; i < getModStringValueCount(); i++ )
+	{
+		uint16_t v = getModStringValue(i)->value;
+		if ( ( value & v ) == v )
+		{
+			if ( ! modString.empty() )
+			{
+				modString += "|";
+			}
+			modString += getModStringValue(i)->string;
+		}
+	}
+	return modString;
+}
+
+std::string valueToString( uint16_t value )
+{
+	// Some aliases like KC_TILD = LSFT(KC_GRV) can be found in the named list.
+	// Thus search the named list first.
+	for ( size_t i = 0; i < getKeycodeStringValueCount(); i++ )
+	{
+		if ( getKeycodeStringValue(i)->value == value )
+		{
+			return std::string(  getKeycodeStringValue(i)->string );
+		}
+	}
+	
+	if ( value >= QK_MODS && value <= QK_MODS_MAX )
+	{
+		// Since these can be combined, need to clear the bit indicating the mod key
+		// and convert the result, possibly recursively.
+		// We could handle the aliases but meh...
+		if ( value & QK_LCTL )
+		{
+			return std::string("LCTL(") + valueToString( value & ~QK_LCTL ) + std::string(")");
+		}
+		if ( value & QK_LSFT )
+		{
+			return std::string("LCTL(") + valueToString( value & ~QK_LSFT ) + std::string(")");
+		}
+		if ( value & QK_LALT )
+		{
+			return std::string("LALT(") + valueToString( value & ~QK_LALT ) + std::string(")");
+		}
+		if ( value & QK_LGUI )
+		{
+			return std::string("LGUI(") + valueToString( value & ~QK_LGUI ) + std::string(")");
+		}
+		if ( value & QK_RCTL )
+		{
+			return std::string("RCTL(") + valueToString( value & ~QK_RCTL ) + std::string(")");
+		}
+		if ( value & QK_LSFT )
+		{
+			return std::string("RCTL(") + valueToString( value & ~QK_RSFT ) + std::string(")");
+		}
+		if ( value & QK_LALT )
+		{
+			return std::string("RALT(") + valueToString( value & ~QK_RALT ) + std::string(")");
+		}
+		if ( value & QK_LGUI )
+		{
+			return std::string("RGUI(") + valueToString( value & ~QK_RGUI ) + std::string(")");
+		}
+	}
+	else if ( value >= QK_LAYER_TAP && value <= QK_LAYER_TAP_MAX )
+	{
+		// LT(layer,kc)
+		return std::string("LT(") + std::to_string((value>>8)&0x000F) + std::string(",") + valueToString( value & 0xFF ) + std::string(")");
+	}
+	else if ( value >= QK_TO && value <= QK_TO_MAX )
+	{
+		// TO(layer)
+		return std::string("TO(") + std::to_string(value & 0x00FF) + std::string(")");
+	}
+	else if ( value >= QK_MOMENTARY && value <= QK_MOMENTARY_MAX )
+	{
+		// MO(layer)
+		return std::string("MO(") + std::to_string(value & 0x00FF) + std::string(")");
+	}
+	else if ( value >= QK_DEF_LAYER && value <= QK_DEF_LAYER_MAX )
+	{
+		// DF(layer)
+		return std::string("DF(") + std::to_string(value & 0x00FF) + std::string(")");
+	}
+	else if ( value >= QK_TOGGLE_LAYER && value <= QK_TOGGLE_LAYER_MAX )
+	{
+		// TG(layer)
+		return std::string("TG(") + std::to_string(value & 0x00FF) + std::string(")");
+	}
+	else if ( value >= QK_ONE_SHOT_LAYER && value <= QK_ONE_SHOT_LAYER_MAX )
+	{
+		// OSL(layer)
+		return std::string("OSL(") + std::to_string(value & 0x00FF) + std::string(")");
+	}
+	else if ( value >= QK_LAYER_MOD && value <= QK_LAYER_MOD_MAX )
+	{
+		// LM(layer,mod)
+		uint8_t layer = (value>>4) & 0x000F;
+		uint8_t mod = value & 0x000F;
+		return std::string("LM(") + std::to_string(layer) + std::string(",") + valueToModString(mod) + std::string(")");
+	}
+	else if ( value >= QK_ONE_SHOT_MOD && value <= QK_ONE_SHOT_MOD_MAX )
+	{
+		// OSM(mod)
+		return std::string("OSM(") + valueToModString(value & 0x00FF) + std::string(")");
+	}
+	else if ( value >= QK_LAYER_TAP_TOGGLE && value <= QK_LAYER_TAP_TOGGLE_MAX )
+	{
+		// TT(layer)
+		return std::string("TT(") + std::to_string(value & 0x00FF) + std::string(")");
+	}
+	else if ( value >= QK_MOD_TAP && value <= QK_MOD_TAP_MAX )
+	{
+		// MT(mod,kc)
+		uint8_t mod = (value>>8) & 0x001F;
+		uint8_t kc = value & 0x00FF;
+		return std::string("MT(") + valueToModString(mod) + std::string(",") + valueToString(kc) + std::string(")");
+	}
+	return std::string("?");
 }

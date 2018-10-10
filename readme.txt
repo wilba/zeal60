@@ -32,7 +32,7 @@ T / Y - color 2 sat -/+
 
 ALSO:
 
-When the zeal60 firmware is programmed, holding Space + Esc down while powering on (i.e. connecting USB to keyboard) will reset ALL the stored settings (keymaps, backlight, etc.) and start the bootloader so it is ready for firmware programming with Flip. If you only want to reset the stored settings, disconnect/connect USB and the firmware is restarted.
+When the zeal60 firmware is programmed, holding Esc down while powering on (i.e. connecting USB to keyboard) will reset ALL the stored settings (keymaps, backlight, etc.) and start the bootloader so it is ready for firmware programming with Flip. If you only want to reset the stored settings, disconnect/connect USB and the firmware is restarted.
 
 
 

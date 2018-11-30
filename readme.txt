@@ -18,8 +18,9 @@ The default backlight controls are on layer 3, which is (by default) enabled by 
  6= Cycle Horizontal
  7= Cycle Vertical
  8= Jellybean Raindrops
- 9= Radial Color 1
-10= Radial All Hues
+ 9= Radial All Hues
+10= Radial Color 1
+
 11= Custom Key Colors
 
 3 / 4 - color 1 hue -/+

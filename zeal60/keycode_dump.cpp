@@ -29,7 +29,7 @@ int main()
 	for ( size_t i = 0; i < getKeycodeStringValueCount(); i++ )
 	{
 		KeycodeStringValue *p = getKeycodeStringValue(i);
-		printf("\t\"%s\": 0x%04x%s\n", p->string, p->value, i<getKeycodeStringValueCount()-1?",":"");
+		printf("  %s: 0x%04x%s\n", p->string, p->value, i<getKeycodeStringValueCount()-1?",":"");
 	}
 	printf("}\n");
     return 0;

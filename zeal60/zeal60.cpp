@@ -34,6 +34,13 @@
 #include "keyboards/zeal60/rgb_backlight_api.h"
 #include "quantum/color.h"
 
+#ifdef _DEBUG
+#define LOG(x) std::err << x
+#else
+
+#endif
+
+
 bool parse_hsv_color_string( const char *string, HSV *color )
 {
 	std::string s = string;
@@ -185,6 +192,7 @@ bool send_message( hid_device *device, uint8_t id, void *outMsg = NULL, uint8_t 
 	hid_set_nonblocking( device, 1 );
 
 	res = 0;
+	memset( data, 0xFE, sizeof( data ) );
 	// Timeout after 500ms
 	for ( int i=0; i<500; i++ )
 	{
@@ -283,6 +291,125 @@ bool dynamic_keymap_reset( hid_device *device )
 	return send_message( device, id_dynamic_keymap_reset );
 }
 
+bool dynamic_keymap_macro_get_count( hid_device *device, uint8_t *count )
+{
+	uint8_t msg[1];
+	if ( send_message( device, id_dynamic_keymap_macro_get_count, msg, sizeof(msg), msg, sizeof(msg) ) )
+	{
+		*count = msg[0];
+		return true;
+	}
+	return false;
+}
+
+bool dynamic_keymap_macro_get_buffer_size( hid_device *device, uint16_t *buffer_size )
+{
+	uint8_t msg[2];
+	if ( send_message( device, id_dynamic_keymap_macro_get_buffer_size, msg, sizeof(msg), msg, sizeof(msg) ) )
+	{
+		*buffer_size = ( msg[0] << 8 ) | msg[1];
+		return true;
+	}
+	return false;
+}
+
+bool dynamic_keymap_macro_get_buffer( hid_device *device, uint8_t *buffer, uint16_t buffer_size )
+{
+	// Raw HID packet size is 32
+	// 1 byte command + 3 bytes for args (offset, size)
+	// leaves 28 bytes size
+	const uint16_t max_size = 28;
+	uint8_t msg[31]; // max_size + 3
+
+	uint16_t offset = 0;
+	uint8_t size = 0;
+	for ( offset = 0; offset < buffer_size; offset += max_size )
+	{
+		// clip last read
+		uint8_t size = min( buffer_size - offset, max_size );
+
+		msg[0] = offset >> 8;
+		msg[1] = offset & 0xFF;
+		msg[2] = size;
+
+		if ( send_message( device, id_dynamic_keymap_macro_get_buffer, msg, sizeof(msg), msg, sizeof(msg) ) )
+		{
+			memcpy( buffer+offset, &msg[3], size );
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool dynamic_keymap_macro_set_buffer( hid_device *device, uint8_t *buffer, uint16_t buffer_size )
+{
+	// Raw HID packet size is 32
+	// 1 byte command + 3 bytes for args (offset, size)
+	// leaves 28 bytes size
+	const uint16_t max_size = 28;
+	uint8_t msg[31]; // max_size + 3
+
+
+	// Set last byte of buffer to non-zero
+	{
+		msg[0] = (buffer_size-1) >> 8;
+		msg[1] = (buffer_size-1) & 0xFF;
+		msg[2] = 1;
+		msg[3] = 0xFF; // non-zero
+
+		if ( ! send_message( device, id_dynamic_keymap_macro_set_buffer, msg, sizeof(msg), msg, sizeof(msg) ) )
+		{
+			return false;
+		}
+	}
+
+	uint16_t offset = 0;
+	uint8_t size = 0;
+	for ( offset = 0; offset < buffer_size; offset += max_size )
+	{
+		// clip last write
+		uint8_t size = min( buffer_size - offset, max_size );
+
+		msg[0] = offset >> 8;
+		msg[1] = offset & 0xFF;
+		msg[2] = size;
+		memcpy( &msg[3], buffer+offset, size );
+
+		if ( send_message( device, id_dynamic_keymap_macro_set_buffer, msg, sizeof(msg), msg, sizeof(msg) ) )
+		{
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	// Set last byte of buffer to zero
+	{
+		msg[0] = (buffer_size-1) >> 8;
+		msg[1] = (buffer_size-1) & 0xFF;
+		msg[2] = 1;
+		msg[3] = 0x00; // zero
+
+		if ( ! send_message( device, id_dynamic_keymap_macro_set_buffer, msg, sizeof(msg), msg, sizeof(msg) ) )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool dynamic_keymap_macro_reset( hid_device *device )
+{
+	return send_message( device, id_dynamic_keymap_macro_reset );
+}
+
+
 bool backlight_config_set_value_uint8( hid_device *device, uint8_t value_id, uint8_t value )
 {
 	uint8_t msg[2];
@@ -346,6 +473,9 @@ bool backlight_config_get_value_uint32( hid_device *device, uint8_t value_id, ui
 	}
 	return false;
 }
+
+
+
 
 hid_device *
 hid_open_least_uptime( unsigned short vendor_id, unsigned short product_id, unsigned short interface_number )
@@ -465,7 +595,11 @@ int main(int argc, char **argv)
 	{
 		device = hid_open_least_uptime( 0x5241, 0x060A, DEVICE_INTERFACE_NUMBER );
 	}
-
+	// Ditto for zeal65.exe and KOYU
+	if ( !device && DEVICE_VID == 0xFEED && DEVICE_PID == 0x6065)
+	{
+		device = hid_open_least_uptime( 0x5241, 0x4B59, DEVICE_INTERFACE_NUMBER );
+	}
 	if ( ! device )
 	{
 		std::cerr << "*** Error: Device not found" << std::endl;
@@ -491,11 +625,6 @@ int main(int argc, char **argv)
 
 	if ( command == "debug" )
 	{
-		uint32_t value = 0;
-		if ( backlight_config_get_value_uint32( device, id_layer_1_indicator_row_col, &value ) )
-		{
-			printf("%04X\n", value );
-		}
 		hid_close( device );
 		return 0;	
 	}
@@ -817,6 +946,78 @@ int main(int argc, char **argv)
 		hid_close( device );
 		return 0;
 	}
+	else if ( command == "get_macro_buffer" )
+	{
+		uint16_t buffer_size = 0;
+		res = dynamic_keymap_macro_get_buffer_size( device, &buffer_size );
+		if ( ! res )
+		{
+			std::cerr << "*** Error: Error getting macro buffer size" << std::endl;
+			hid_close( device );
+			return -1;
+		}
+
+		if ( buffer_size >= 1024 )
+		{
+			std::cerr << "*** Error: Error getting macro buffer size, it's >1024" << std::endl;
+			hid_close( device );
+			return -1;
+		}
+
+		// Big enough
+		uint8_t buffer[1024];
+		res = dynamic_keymap_macro_get_buffer( device, buffer, buffer_size );
+		if ( ! res )
+		{
+			std::cerr << "*** Error: Error getting macro buffer" << std::endl;
+			hid_close( device );
+			return -1;
+		}
+
+		hid_close( device );
+		return 0;
+	}
+	else if ( command == "set_macro_buffer" )
+	{
+		uint16_t buffer_size = 0;
+		res = dynamic_keymap_macro_get_buffer_size( device, &buffer_size );
+		if ( ! res )
+		{
+			std::cerr << "*** Error: Error getting macro buffer size" << std::endl;
+			hid_close( device );
+			return -1;
+		}
+
+		if ( buffer_size >= 1024 )
+		{
+			std::cerr << "*** Error: Error getting macro buffer size, it's >1024" << std::endl;
+			hid_close( device );
+			return -1;
+		}
+
+		// Big enough
+		uint8_t buffer[1024];
+		// Pad with zeroes
+		memset(buffer,0,1024);
+
+		// TODO: some actual compiling of N macros into a single buffer.
+		// For now, just copy from a string
+
+		char debug_macro_string[] = "macro00\0macro01\0macro02\0macro03\0macro04\0macro05\0macro06\0macro07\0macro08\0macro09\0macro10\0macro11\0macro12\0macro13\0macro14\0macro15\0";
+		memcpy(buffer,debug_macro_string,sizeof(debug_macro_string));
+
+		res = dynamic_keymap_macro_set_buffer( device, buffer, buffer_size );
+		if ( ! res )
+		{
+			std::cerr << "*** Error: Error setting macro buffer" << std::endl;
+			hid_close( device );
+			return -1;
+		}
+
+		hid_close( device );
+		return 0;
+	}
+
 	std::cerr << "*** Error: Invalid command '" << command << "'" << std::endl;
 	return -1;
 }

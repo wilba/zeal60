@@ -30,8 +30,10 @@
 #include "keycode.h"
 
 // ../../qmk_firmware/ is in include path
-#include "keyboards/zeal60/zeal60_api.h"
-#include "keyboards/zeal60/rgb_backlight_api.h"
+//#include "quantum/action.h"
+typedef int keyrecord_t;
+#include "quantum/via.h"
+#include "keyboards/wilba_tech/wt_rgb_backlight_api.h"
 #include "quantum/color.h"
 
 #ifdef _DEBUG
@@ -40,6 +42,7 @@
 
 #endif
 
+#define RAMA_WORKS_HACK
 
 bool parse_hsv_color_string( const char *string, HSV *color )
 {
@@ -415,7 +418,7 @@ bool backlight_config_set_value_uint8( hid_device *device, uint8_t value_id, uin
 	uint8_t msg[2];
 	msg[0] = value_id;
 	msg[1] = value;
-	return send_message( device, id_backlight_config_set_value, msg, sizeof(msg) );
+	return send_message( device, id_lighting_set_value, msg, sizeof(msg) );
 }
 
 bool backlight_config_set_value_bool( hid_device *device, uint8_t value_id, bool value )
@@ -428,7 +431,7 @@ bool backlight_config_set_value_uint8_2( hid_device *device, uint8_t value_id, u
 	msg[0] = value_id;
 	msg[1] = value1;
 	msg[2] = value2;
-	return send_message( device, id_backlight_config_set_value, msg, sizeof(msg) );
+	return send_message( device, id_lighting_set_value, msg, sizeof(msg) );
 }
 
 bool backlight_config_set_value_HSV( hid_device *device, uint8_t value_id, HSV value )
@@ -438,7 +441,7 @@ bool backlight_config_set_value_HSV( hid_device *device, uint8_t value_id, HSV v
 	msg[1] = value.h;
 	msg[2] = value.s;
 	msg[3] = value.v;
-	return send_message( device, id_backlight_config_set_value, msg, sizeof(msg) );
+	return send_message( device, id_lighting_set_value, msg, sizeof(msg) );
 }
 
 bool backlight_config_set_alphas_mods( hid_device *device, uint16_t *alphas_mods )
@@ -450,12 +453,12 @@ bool backlight_config_set_alphas_mods( hid_device *device, uint16_t *alphas_mods
 		msg[1+(i*2)+0] = alphas_mods[i] >> 8;
 		msg[1+(i*2)+1] = alphas_mods[i] & 0xFF;
 	}
-	return send_message( device, id_backlight_config_set_value, msg, sizeof(msg) );
+	return send_message( device, id_lighting_set_value, msg, sizeof(msg) );
 }
 
 bool backlight_config_save(  hid_device *device )
 {
-	return send_message( device, id_backlight_config_save );
+	return send_message( device, id_lighting_save );
 }
 
 bool backlight_config_get_value_uint32( hid_device *device, uint8_t value_id, uint32_t *value )
@@ -466,7 +469,7 @@ bool backlight_config_get_value_uint32( hid_device *device, uint8_t value_id, ui
 	msg[2] = 0xFF;
 	msg[3] = 0xFF;
 	msg[4] = 0xFF;
-	if ( send_message( device, id_backlight_config_get_value, msg, sizeof(msg), msg, sizeof(msg) ) )
+	if ( send_message( device, id_lighting_get_value, msg, sizeof(msg), msg, sizeof(msg) ) )
 	{
 		*value = ( msg[1] << 24 ) | ( msg[2] << 16 ) | ( msg[3] << 8 ) | msg[4];
 		return true;
@@ -510,10 +513,10 @@ hid_open_least_uptime( unsigned short vendor_id, unsigned short product_id, unsi
 			//return 0;
 		}
 
-		if ( protocolVersion != PROTOCOL_VERSION )
+		if ( protocolVersion != VIA_PROTOCOL_VERSION )
 		{
 			std::cerr << "*** Error: Device uses protocol version " << protocolVersion << std::endl;
-			std::cerr << "This program uses protocol version " << PROTOCOL_VERSION << std::endl;
+			std::cerr << "This program uses protocol version " << VIA_PROTOCOL_VERSION << std::endl;
 			hid_close( device );
 			continue;
 			//return 0;
@@ -559,6 +562,30 @@ hid_test(void)
 		printf("  Release:      %hx\n", cur_dev->release_number);
 		printf("  Interface:    %d\n",  cur_dev->interface_number);
 		printf("\n");
+
+		if ( cur_dev->interface_number == 1 )
+		{
+			hid_device *device = hid_open_path( cur_dev->path );
+			if ( device )
+			{
+				uint16_t protocolVersion = 0x0000;
+				if ( get_protocol_version( device, &protocolVersion ) )
+				{
+					printf("get_protocol_version() returned %04x\n", protocolVersion );
+				}
+				else
+				{
+					printf("get_protocol_version() failed\n" );
+				}
+				hid_close( device );
+			}
+			else
+			{
+				printf("hid_open_path() failed\n" );
+			}
+
+			printf("\n");
+		}
 		cur_dev = cur_dev->next;
 	}
 	hid_free_enumeration(devs);
@@ -588,18 +615,20 @@ int main(int argc, char **argv)
 	}
 
 	hid_device *device = hid_open_least_uptime( DEVICE_VID, DEVICE_PID, DEVICE_INTERFACE_NUMBER );
+#ifdef RAMA_WORKS_HACK
 	// Extreme hack, zeal60.exe being used to find a RAMA M60-A device
 	// This is a short-term workaround until I refactor the code...
 	// Really don't want to make a "m60a.exe" that's essentially zeal60.exe compiled with different VID/PID
-	if ( !device && DEVICE_VID == 0xFEED && DEVICE_PID == 0x6060)
+	if ( !device && DEVICE_VID == 0x5A45 && DEVICE_PID == 0x0060)
 	{
 		device = hid_open_least_uptime( 0x5241, 0x060A, DEVICE_INTERFACE_NUMBER );
 	}
 	// Ditto for zeal65.exe and KOYU
-	if ( !device && DEVICE_VID == 0xFEED && DEVICE_PID == 0x6065)
+	if ( !device && DEVICE_VID == 0x5A45 && DEVICE_PID == 0x0065)
 	{
 		device = hid_open_least_uptime( 0x5241, 0x4B59, DEVICE_INTERFACE_NUMBER );
 	}
+#endif
 	if ( ! device )
 	{
 		std::cerr << "*** Error: Device not found" << std::endl;
@@ -608,23 +637,37 @@ int main(int argc, char **argv)
 
 	bool res = false;
 	uint16_t protocolVersion;
-	if ( res == get_protocol_version( device, &protocolVersion ) )
+	res = get_protocol_version( device, &protocolVersion );
+	if ( ! res )
 	{
 		std::cerr << "*** Error: Error getting protocol version" << std::endl;
 		hid_close( device );
 		return -1;
 	}
 
-	if ( protocolVersion != PROTOCOL_VERSION )
+	if ( protocolVersion != VIA_PROTOCOL_VERSION )
 	{
 		std::cerr << "*** Error: Device uses protocol version " << protocolVersion << std::endl;
-		std::cerr << "This program uses protocol version " << PROTOCOL_VERSION << std::endl;
+		std::cerr << "This program uses protocol version " << VIA_PROTOCOL_VERSION << std::endl;
 		hid_close( device );
 		return -1;
 	}
 
 	if ( command == "debug" )
 	{
+
+		while ( true )
+		{
+			uint32_t thisDeviceTick = 0;
+			if ( !get_keyboard_value_uint32( device, id_uptime, &thisDeviceTick ) )
+			{
+				std::cerr << "*** Error: Error getting uptime" << std::endl;
+				hid_close( device );
+				return -1;
+			}
+			printf("%08hx\n", thisDeviceTick);
+			Sleep( 1000 );
+		}
 		hid_close( device );
 		return 0;	
 	}

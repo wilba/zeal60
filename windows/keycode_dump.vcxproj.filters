@@ -29,5 +29,11 @@
     <ClInclude Include="..\zeal60\keycode.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\zeal60\keymap_us.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\zeal60\keymap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

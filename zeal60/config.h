@@ -2,8 +2,8 @@
 
 #ifdef ZEAL65
 
-#define DEVICE_VID 0xFEED
-#define DEVICE_PID 0x6065
+#define DEVICE_VID 0x5A45
+#define DEVICE_PID 0x0065
 #define DEVICE_INTERFACE_NUMBER 0x01
 
 #define RAW_HID_BUFFER_SIZE 32
@@ -13,8 +13,8 @@
 
 #else
 
-#define DEVICE_VID 0xFEED
-#define DEVICE_PID 0x6060
+#define DEVICE_VID 0x6582
+#define DEVICE_PID 0x0028
 #define DEVICE_INTERFACE_NUMBER 0x01
 
 #define RAW_HID_BUFFER_SIZE 32
